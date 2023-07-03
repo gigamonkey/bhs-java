@@ -51,8 +51,9 @@ public class TestRunner {
   ) {}
 
   /*
-   * Wrap up the two classes and get the objects and methods we need to run the
-   * tests.
+   * The workhorse class. Wraps up the two classes and the test cases and then
+   * can figure out which methods are actually testable and generates the
+   * results.
    */
   private static class Test {
 
