@@ -1,6 +1,7 @@
 package com.gigamonkeys.bhs;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
@@ -14,23 +15,45 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonPrimitive;
 import com.google.gson.reflect.TypeToken;
 
 public class TestRunner {
 
   private static final Type TEST_CASES_TYPE = new TypeToken<Map<String, TestCase[]>>() {}.getType();
-  private static final Type TEST_RESULTS_TYPE = new TypeToken<Map<String, TestResult[]>>() {}
-    .getType();
 
-  private final Gson gson = new Gson();
+  private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
-  static record TestCase(JsonElement[] args) {}
+  static record TestCase(JsonElement[] args) {
+    public Object[] argsFor(Method m) {
+      var types = m.getParameterTypes();
+      var actualArgs = new Object[args.length];
+      for (var i = 0; i < args.length; i++) {
+        actualArgs[i] = gson.fromJson(args[i], types[i]);
+      }
+      return actualArgs;
+    }
+  }
 
-  static record TestResult(JsonElement[] args, JsonElement got, JsonElement expected) {}
+  static record TestResult(
+    JsonElement[] args,
+    JsonElement got,
+    JsonElement expected,
+    boolean passed
+  ) {}
 
   static record TestClasses(Class<?> testClass, Class<?> referenceClass) {
+    public Object testObject()
+      throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
+      return testClass.getConstructor(new Class[0]).newInstance();
+    }
+
+    public Object referenceObject()
+      throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
+      return referenceClass.getConstructor(new Class[0]).newInstance();
+    }
+
     public List<Method> referenceMethods() {
       return Arrays
         .stream(referenceClass.getDeclaredMethods())
@@ -58,7 +81,7 @@ public class TestRunner {
   static record TestRun(String testClass, String referenceClass, String testCasesFile) {}
 
   public void run(TestRun run)
-    throws ClassNotFoundException, IOException, NoSuchMethodException, SecurityException {
+    throws ClassNotFoundException, IOException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
     var classes = loadClasses(run);
     var cases = loadTestCases(run.testCasesFile());
 
@@ -67,6 +90,9 @@ public class TestRunner {
     // Find all the public methods on the reference class
     // Find all the corresponding methods on the test class.
     // Look up the test cases by the method's name.
+
+    Object testObject = classes.testObject();
+    Object referenceObject = classes.referenceObject();
 
     for (Method m : classes.referenceMethods()) {
       var tm = classes.testMethod(m);
@@ -78,17 +104,22 @@ public class TestRunner {
         System.out.println(" none");
       } else {
         System.out.println();
-        var results = new TestResult[cs.length];
         for (var i = 0; i < cs.length; i++) {
-          results[i] = new TestResult(cs[i].args(), new JsonPrimitive(1), new JsonPrimitive(2));
           System.out.println("    args: " + Arrays.deepToString(cs[i].args()));
         }
-        allResults.put(m.getName(), results);
+
+        if (tm.isPresent()) {
+          var results = new TestResult[cs.length];
+          for (var i = 0; i < cs.length; i++) {
+            results[i] = test(testObject, referenceObject, tm.get(), m, cs[i]);
+          }
+          allResults.put(m.getName(), results);
+        }
       }
     }
     // For each set of args, coerce array of JsonElements into an array of the appropriate types for the method arguments.
     // Make a TestResult object from the original args, and a JsonElement representing the got and expected values.
-    System.out.println(testResultsToJson(allResults));
+    System.out.println(gson.toJson(allResults));
   }
 
   private TestClasses loadClasses(TestRun run) throws ClassNotFoundException {
@@ -99,8 +130,22 @@ public class TestRunner {
     return gson.fromJson(Files.readString(Paths.get(filename)), TEST_CASES_TYPE);
   }
 
-  private String testResultsToJson(Map<String, TestResult[]> results) {
-    return gson.toJson(results);
+  private TestResult test(
+    Object testObject,
+    Object referenceObject,
+    Method testMethod,
+    Method referenceMethod,
+    TestCase testCase
+  ) throws IllegalAccessException, InvocationTargetException {
+    var args = testCase.argsFor(testMethod);
+    var got = testMethod.invoke(testObject, args);
+    var expected = referenceMethod.invoke(referenceObject, args);
+    return new TestResult(
+      testCase.args(),
+      gson.toJsonTree(got),
+      gson.toJsonTree(expected),
+      got.equals(expected)
+    );
   }
 
   public static void main(String[] args) throws Exception {
