@@ -1,11 +1,16 @@
 package com.gigamonkeys.bhs;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -23,12 +28,29 @@ public class TestRunner {
 
   static record TestResult(JsonElement[] args, JsonElement got, JsonElement expected) {}
 
-  static record TestClasses(Class<?> testClass, Class<?> referenceClass) {}
+  static record TestClasses(Class<?> testClass, Class<?> referenceClass) {
+    public Optional<Method> testMethod(Method m) {
+      return methodFromClass(m, testClass);
+    }
+
+    public Optional<Method> referenceMethod(Method m) {
+      return methodFromClass(m, referenceClass);
+    }
+
+    private Optional<Method> methodFromClass(Method m, Class<?> testClass) {
+      try {
+        return Optional.of(testClass.getDeclaredMethod(m.getName(), m.getParameterTypes()));
+      } catch (NoSuchMethodException | SecurityException e) {
+        return Optional.empty();
+      }
+    }
+  }
 
   static record TestRun(String testClass, String referenceClass, String testCasesFile) {}
 
-  public void run(TestRun run) throws ClassNotFoundException, IOException {
-    //var classes = loadClasses(run);
+  public void run(TestRun run)
+    throws ClassNotFoundException, IOException, NoSuchMethodException, SecurityException {
+    var classes = loadClasses(run);
     var cases = loadTestCases(run.testCasesFile());
 
     for (Map.Entry<String, TestCase[]> entry : cases.entrySet()) {
@@ -38,11 +60,24 @@ public class TestRunner {
       }
     }
     // Find all the public methods on the reference class
+    for (Method m : getPublicDeclaredMethods(classes.referenceClass)) {
+      var tm = classes.testMethod(m);
+      System.out.println(m.getName() + ":\n  reference: " + m + "\n  test:" + tm);
+    }
+
+    System.out.println(getPublicDeclaredMethods(classes.referenceClass()));
     // Find all the corresponding methods on the test class.
     // Look up the test cases by the method's name.
     // For each set of args, coerce array of JsonElements into an array of the appropriate types for the method arguments.
     // Make a TestResult object from the original args, and a JsonElement representing the got and expected values.
 
+  }
+
+  private List<Method> getPublicDeclaredMethods(Class<?> clazz) {
+    return Arrays
+      .stream(clazz.getDeclaredMethods())
+      .filter(method -> Modifier.isPublic(method.getModifiers()))
+      .collect(Collectors.toList());
   }
 
   private TestClasses loadClasses(TestRun run) throws ClassNotFoundException {
