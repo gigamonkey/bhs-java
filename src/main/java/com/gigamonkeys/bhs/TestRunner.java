@@ -7,6 +7,7 @@ import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -14,6 +15,7 @@ import java.util.stream.Collectors;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonPrimitive;
 import com.google.gson.reflect.TypeToken;
 
 public class TestRunner {
@@ -60,6 +62,8 @@ public class TestRunner {
     var classes = loadClasses(run);
     var cases = loadTestCases(run.testCasesFile());
 
+    var allResults = new HashMap<String, TestResult[]>();
+
     // Find all the public methods on the reference class
     // Find all the corresponding methods on the test class.
     // Look up the test cases by the method's name.
@@ -74,14 +78,17 @@ public class TestRunner {
         System.out.println(" none");
       } else {
         System.out.println();
-        for (TestCase testCase : cs) {
-          System.out.println("    args: " + Arrays.deepToString(testCase.args()));
+        var results = new TestResult[cs.length];
+        for (var i = 0; i < cs.length; i++) {
+          results[i] = new TestResult(cs[i].args(), new JsonPrimitive(1), new JsonPrimitive(2));
+          System.out.println("    args: " + Arrays.deepToString(cs[i].args()));
         }
+        allResults.put(m.getName(), results);
       }
     }
     // For each set of args, coerce array of JsonElements into an array of the appropriate types for the method arguments.
     // Make a TestResult object from the original args, and a JsonElement representing the got and expected values.
-
+    System.out.println(testResultsToJson(allResults));
   }
 
   private TestClasses loadClasses(TestRun run) throws ClassNotFoundException {
