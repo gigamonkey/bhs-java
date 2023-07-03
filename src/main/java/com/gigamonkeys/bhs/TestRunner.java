@@ -1,12 +1,11 @@
 package com.gigamonkeys.bhs;
 
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -15,7 +14,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.reflect.TypeToken;
 
@@ -23,7 +21,8 @@ public class TestRunner {
 
   private static final Type TEST_CASES_TYPE = new TypeToken<Map<String, TestCase[]>>() {}.getType();
 
-  private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+  // For pretty-printed JSON use new GsonBuilder().setPrettyPrinting().create() instead of new Gson();
+  private static final Gson gson = new Gson();
 
   static record TestCase(JsonElement[] args) {
     public Object[] argsFor(Method m) {
@@ -43,30 +42,65 @@ public class TestRunner {
     boolean passed
   ) {}
 
-  static record TestClasses(Class<?> testClass, Class<?> referenceClass) {
-    public Object testObject()
-      throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
-      return testClass.getConstructor(new Class[0]).newInstance();
+  private static class TestClasses {
+
+    private final Class<?> testClass;
+    private final Class<?> referenceClass;
+    private final Object testObject;
+    private final Object referenceObject;
+    private final List<Method> referenceMethods;
+
+    TestClasses(String testClassName, String referenceClassName) throws Exception {
+      this.testClass = Class.forName(testClassName);
+      this.referenceClass = Class.forName(referenceClassName);
+      this.testObject = testClass.getConstructor(new Class[0]).newInstance();
+      this.referenceObject = referenceClass.getConstructor(new Class[0]).newInstance();
+      this.referenceMethods =
+        Arrays
+          .stream(referenceClass.getDeclaredMethods())
+          .filter(method -> Modifier.isPublic(method.getModifiers()))
+          .collect(Collectors.toList());
     }
 
-    public Object referenceObject()
-      throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
-      return referenceClass.getConstructor(new Class[0]).newInstance();
+    /*
+     * Methods from the reference class that exist both in the test class and
+     * the test cases.
+     */
+    public List<Method> testableMethods(Map<String, TestCase[]> cases) {
+      var methods = new ArrayList<Method>();
+
+      for (Method m : referenceMethods) {
+        testMethod(m)
+          .ifPresent(tm -> {
+            TestCase[] cs = cases.get(m.getName());
+            if (cs != null) {
+              methods.add(m);
+            }
+          });
+      }
+      return methods;
     }
 
-    public List<Method> referenceMethods() {
-      return Arrays
-        .stream(referenceClass.getDeclaredMethods())
-        .filter(method -> Modifier.isPublic(method.getModifiers()))
-        .collect(Collectors.toList());
+    public TestResult test(Method method, TestCase testCase) throws Exception {
+      var tm = testMethod(method);
+      if (tm.isPresent()) {
+        var testMethod = tm.get();
+        var args = testCase.argsFor(method);
+        var got = testMethod.invoke(testObject, args);
+        var expected = method.invoke(referenceObject, args);
+        return new TestResult(
+          testCase.args(),
+          gson.toJsonTree(got),
+          gson.toJsonTree(expected),
+          got.equals(expected)
+        );
+      } else {
+        throw new IllegalArgumentException("Called test on nontestable method.");
+      }
     }
 
     public Optional<Method> testMethod(Method m) {
       return methodFromClass(m, testClass);
-    }
-
-    public Optional<Method> referenceMethod(Method m) {
-      return methodFromClass(m, referenceClass);
     }
 
     private Optional<Method> methodFromClass(Method m, Class<?> testClass) {
@@ -80,76 +114,37 @@ public class TestRunner {
 
   static record TestRun(String testClass, String referenceClass, String testCasesFile) {}
 
-  public void run(TestRun run)
-    throws ClassNotFoundException, IOException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-    var classes = loadClasses(run);
-    var cases = loadTestCases(run.testCasesFile());
+  public void run(TestRun run) throws Exception {
+    var classes = new TestClasses(run.testClass(), run.referenceClass());
+    var cases = loadCases(run);
 
     var allResults = new HashMap<String, TestResult[]>();
 
-    // Find all the public methods on the reference class
-    // Find all the corresponding methods on the test class.
-    // Look up the test cases by the method's name.
-
-    Object testObject = classes.testObject();
-    Object referenceObject = classes.referenceObject();
-
-    for (Method m : classes.referenceMethods()) {
-      var tm = classes.testMethod(m);
-      System.out.println(m.getName() + ":\n  reference: " + m + "\n  test:" + tm);
-
+    for (Method m : classes.testableMethods(cases)) {
       TestCase[] cs = cases.get(m.getName());
-      System.out.print("  cases:");
-      if (cs == null) {
-        System.out.println(" none");
-      } else {
-        System.out.println();
+      if (cs != null) {
+        var results = new TestResult[cs.length];
         for (var i = 0; i < cs.length; i++) {
-          System.out.println("    args: " + Arrays.deepToString(cs[i].args()));
+          results[i] = classes.test(m, cs[i]);
         }
-
-        if (tm.isPresent()) {
-          var results = new TestResult[cs.length];
-          for (var i = 0; i < cs.length; i++) {
-            results[i] = test(testObject, referenceObject, tm.get(), m, cs[i]);
-          }
-          allResults.put(m.getName(), results);
-        }
+        allResults.put(m.getName(), results);
+      } else {
+        System.err.println("No test cases for " + m.getName());
       }
     }
-    // For each set of args, coerce array of JsonElements into an array of the appropriate types for the method arguments.
-    // Make a TestResult object from the original args, and a JsonElement representing the got and expected values.
     System.out.println(gson.toJson(allResults));
   }
 
-  private TestClasses loadClasses(TestRun run) throws ClassNotFoundException {
-    return new TestClasses(Class.forName(run.testClass()), Class.forName(run.referenceClass()));
+  private Map<String, TestCase[]> loadCases(TestRun run) throws Exception {
+    return gson.fromJson(Files.readString(Paths.get(run.testCasesFile())), TEST_CASES_TYPE);
   }
 
-  private Map<String, TestCase[]> loadTestCases(String filename) throws IOException {
-    return gson.fromJson(Files.readString(Paths.get(filename)), TEST_CASES_TYPE);
-  }
-
-  private TestResult test(
-    Object testObject,
-    Object referenceObject,
-    Method testMethod,
-    Method referenceMethod,
-    TestCase testCase
-  ) throws IllegalAccessException, InvocationTargetException {
-    var args = testCase.argsFor(testMethod);
-    var got = testMethod.invoke(testObject, args);
-    var expected = referenceMethod.invoke(referenceObject, args);
-    return new TestResult(
-      testCase.args(),
-      gson.toJsonTree(got),
-      gson.toJsonTree(expected),
-      got.equals(expected)
-    );
-  }
-
-  public static void main(String[] args) throws Exception {
-    var run = new TestRun(args[0], args[1], args[2]);
-    new TestRunner().run(run);
+  public static void main(String[] args) {
+    try {
+      new TestRunner().run(new TestRun(args[0], args[1], args[2]));
+    } catch (Exception e) {
+      System.err.println("Exception while running tests.");
+      e.printStackTrace(System.err);
+    }
   }
 }
