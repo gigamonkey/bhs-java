@@ -24,6 +24,10 @@ public class TestRunner {
   // For pretty-printed JSON use new GsonBuilder().setPrettyPrinting().create() instead of new Gson();
   private static final Gson gson = new Gson();
 
+  /*
+   * A test case as it comes in in the JSON. We may add fields to this in future
+   * for things like expected exceptions.
+   */
   static record TestCase(JsonElement[] args) {
     public Object[] argsFor(Method m) {
       var types = m.getParameterTypes();
@@ -35,6 +39,10 @@ public class TestRunner {
     }
   }
 
+  /*
+   * The result of running one test case as it goes back in JSON. This structure
+   * needs to match what the test result display code on the web expects.
+   */
   static record TestResult(
     JsonElement[] args,
     JsonElement got,
@@ -42,19 +50,26 @@ public class TestRunner {
     boolean passed
   ) {}
 
-  private static class TestClasses {
+  /*
+   * Wrap up the two classes and get the objects and methods we need to run the
+   * tests.
+   */
+  private static class Test {
 
     private final Class<?> testClass;
     private final Class<?> referenceClass;
     private final Object testObject;
     private final Object referenceObject;
     private final List<Method> referenceMethods;
+    private final Map<String, TestCase[]> cases;
 
-    TestClasses(String testClassName, String referenceClassName) throws Exception {
+    Test(String testClassName, String referenceClassName, String testCasesFile) throws Exception {
       this.testClass = Class.forName(testClassName);
       this.referenceClass = Class.forName(referenceClassName);
       this.testObject = testClass.getConstructor(new Class[0]).newInstance();
       this.referenceObject = referenceClass.getConstructor(new Class[0]).newInstance();
+      this.cases = gson.fromJson(Files.readString(Paths.get(testCasesFile)), TEST_CASES_TYPE);
+
       this.referenceMethods =
         Arrays
           .stream(referenceClass.getDeclaredMethods())
@@ -62,41 +77,27 @@ public class TestRunner {
           .collect(Collectors.toList());
     }
 
-    /*
-     * Methods from the reference class that exist both in the test class and
-     * the test cases.
-     */
-    public List<Method> testableMethods(Map<String, TestCase[]> cases) {
-      var methods = new ArrayList<Method>();
+    public Map<String, TestResult[]> results() throws Exception {
+      var allResults = new HashMap<String, TestResult[]>();
+      for (Testable t : testables(cases)) {
+        allResults.put(t.name(), t.results());
+      }
+      return allResults;
+    }
+
+    public List<Testable> testables(Map<String, TestCase[]> cases) {
+      var testables = new ArrayList<Testable>();
 
       for (Method m : referenceMethods) {
         testMethod(m)
           .ifPresent(tm -> {
             TestCase[] cs = cases.get(m.getName());
             if (cs != null) {
-              methods.add(m);
+              testables.add(new Testable(tm, m, cs));
             }
           });
       }
-      return methods;
-    }
-
-    public TestResult test(Method method, TestCase testCase) throws Exception {
-      var tm = testMethod(method);
-      if (tm.isPresent()) {
-        var testMethod = tm.get();
-        var args = testCase.argsFor(method);
-        var got = testMethod.invoke(testObject, args);
-        var expected = method.invoke(referenceObject, args);
-        return new TestResult(
-          testCase.args(),
-          gson.toJsonTree(got),
-          gson.toJsonTree(expected),
-          got.equals(expected)
-        );
-      } else {
-        throw new IllegalArgumentException("Called test on nontestable method.");
-      }
+      return testables;
     }
 
     public Optional<Method> testMethod(Method m) {
@@ -110,38 +111,52 @@ public class TestRunner {
         return Optional.empty();
       }
     }
-  }
 
-  static record TestRun(String testClass, String referenceClass, String testCasesFile) {}
+    /*
+     * Actually testable combinations of a test method, a reference method, and
+     * some test cases.
+     */
+    class Testable {
 
-  public void run(TestRun run) throws Exception {
-    var classes = new TestClasses(run.testClass(), run.referenceClass());
-    var cases = loadCases(run);
+      private final Method testMethod;
+      private final Method referenceMethod;
+      private final TestCase[] cases;
 
-    var allResults = new HashMap<String, TestResult[]>();
+      Testable(Method testMethod, Method referenceMethod, TestCase[] cases) {
+        this.testMethod = testMethod;
+        this.referenceMethod = referenceMethod;
+        this.cases = cases;
+      }
 
-    for (Method m : classes.testableMethods(cases)) {
-      TestCase[] cs = cases.get(m.getName());
-      if (cs != null) {
-        var results = new TestResult[cs.length];
-        for (var i = 0; i < cs.length; i++) {
-          results[i] = classes.test(m, cs[i]);
+      public TestResult[] results() throws Exception {
+        var results = new TestResult[cases.length];
+        for (var i = 0; i < cases.length; i++) {
+          results[i] = test(cases[i]);
         }
-        allResults.put(m.getName(), results);
-      } else {
-        System.err.println("No test cases for " + m.getName());
+        return results;
+      }
+
+      public String name() {
+        return testMethod.getName();
+      }
+
+      public TestResult test(TestCase testCase) throws Exception {
+        var args = testCase.argsFor(testMethod);
+        var got = testMethod.invoke(testObject, args);
+        var expected = referenceMethod.invoke(referenceObject, args);
+        return new TestResult(
+          testCase.args(),
+          gson.toJsonTree(got),
+          gson.toJsonTree(expected),
+          got.equals(expected)
+        );
       }
     }
-    System.out.println(gson.toJson(allResults));
-  }
-
-  private Map<String, TestCase[]> loadCases(TestRun run) throws Exception {
-    return gson.fromJson(Files.readString(Paths.get(run.testCasesFile())), TEST_CASES_TYPE);
   }
 
   public static void main(String[] args) {
     try {
-      new TestRunner().run(new TestRun(args[0], args[1], args[2]));
+      System.out.println(gson.toJson(new Test(args[0], args[1], args[2]).results()));
     } catch (Exception e) {
       System.err.println("Exception while running tests.");
       e.printStackTrace(System.err);
