@@ -29,6 +29,13 @@ public class TestRunner {
   static record TestResult(JsonElement[] args, JsonElement got, JsonElement expected) {}
 
   static record TestClasses(Class<?> testClass, Class<?> referenceClass) {
+    public List<Method> referenceMethods() {
+      return Arrays
+        .stream(referenceClass.getDeclaredMethods())
+        .filter(method -> Modifier.isPublic(method.getModifiers()))
+        .collect(Collectors.toList());
+    }
+
     public Optional<Method> testMethod(Method m) {
       return methodFromClass(m, testClass);
     }
@@ -53,31 +60,28 @@ public class TestRunner {
     var classes = loadClasses(run);
     var cases = loadTestCases(run.testCasesFile());
 
-    for (Map.Entry<String, TestCase[]> entry : cases.entrySet()) {
-      System.out.println("Method: " + entry.getKey());
-      for (TestCase testCase : entry.getValue()) {
-        System.out.println("Args: " + Arrays.deepToString(testCase.args()));
-      }
-    }
     // Find all the public methods on the reference class
-    for (Method m : getPublicDeclaredMethods(classes.referenceClass)) {
-      var tm = classes.testMethod(m);
-      System.out.println(m.getName() + ":\n  reference: " + m + "\n  test:" + tm);
-    }
-
-    System.out.println(getPublicDeclaredMethods(classes.referenceClass()));
     // Find all the corresponding methods on the test class.
     // Look up the test cases by the method's name.
+
+    for (Method m : classes.referenceMethods()) {
+      var tm = classes.testMethod(m);
+      System.out.println(m.getName() + ":\n  reference: " + m + "\n  test:" + tm);
+
+      TestCase[] cs = cases.get(m.getName());
+      System.out.print("  cases:");
+      if (cs == null) {
+        System.out.println(" none");
+      } else {
+        System.out.println();
+        for (TestCase testCase : cs) {
+          System.out.println("    args: " + Arrays.deepToString(testCase.args()));
+        }
+      }
+    }
     // For each set of args, coerce array of JsonElements into an array of the appropriate types for the method arguments.
     // Make a TestResult object from the original args, and a JsonElement representing the got and expected values.
 
-  }
-
-  private List<Method> getPublicDeclaredMethods(Class<?> clazz) {
-    return Arrays
-      .stream(clazz.getDeclaredMethods())
-      .filter(method -> Modifier.isPublic(method.getModifiers()))
-      .collect(Collectors.toList());
   }
 
   private TestClasses loadClasses(TestRun run) throws ClassNotFoundException {
