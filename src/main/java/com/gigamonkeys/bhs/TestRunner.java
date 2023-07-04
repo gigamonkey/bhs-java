@@ -37,7 +37,7 @@ public class TestRunner {
   private final List<Method> referenceMethods;
   private final Map<String, TestCase[]> allTestCases;
 
-  TestRunner(String testClassName, String referenceClassName, String testCasesFile)
+  public TestRunner(String testClassName, String referenceClassName, String testCasesFile)
     throws Exception {
     this.testClass = Class.forName(testClassName);
     this.referenceClass = Class.forName(referenceClassName);
