@@ -16,12 +16,10 @@ build:
 cp.txt:
 	mvn dependency:build-classpath -Dmdep.outputFile=cp.txt
 
-
 check: cp.txt
 	java -cp "target/bhs-cs-1.0-SNAPSHOT.jar:$(shell cat cp.txt)" com.gigamonkeys.bhs.TestRunner com.gigamonkeys.bhs.TestClass com.gigamonkeys.bhs.ReferenceClass cases.json
 
 publish: $(published)
-
 
 $(published): target/bhs-cs-1.0-SNAPSHOT.jar
 	cp $< $@
