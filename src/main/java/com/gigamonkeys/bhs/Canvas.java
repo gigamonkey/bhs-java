@@ -36,48 +36,36 @@ public class Canvas {
   }
 
   public String code() {
-    text.append(FOOTER);
-    return text.toString();
+    return text.append(FOOTER).toString();
   }
 
   /**
-   * Draws a line from x1,y1 to x2,y2 using the give color and the give line width.
+   * Draws a line from x1,y1 to x2,y2 using the give color and the given line width.
    */
   public void drawLine(double x1, double y1, double x2, double y2, String color, double lineWidth) {
-    text.append("ctx.strokeStyle = '").append(color).append("';\n");
-    text.append("ctx.lineWidth = ").append(lineWidth).append(";\n");
-    text.append("ctx.beginPath();\n");
+    strokeStyle(color);
+    lineWidth(lineWidth);
+    beginPath();
     text.append("ctx.moveTo(").append(x1).append(", ").append(y1).append(");\n");
     text.append("ctx.lineTo(").append(x2).append(", ").append(y2).append(");\n");
-    text.append("ctx.stroke();\n");
+    stroke();
   }
 
   /**
-   * Draws a circle centered at x,y with radius r using the given color. The
-   * fith argument, lineWidth, is optional and defaults to 1.
+   * Draws a circle centered at x,y with radius r using the given color and the given lineWidth.
    */
   public void drawCircle(double x, double y, double r, String color, double lineWidth) {
-    text.append("ctx.strokeStyle = '").append(color).append("';\n");
-    text.append("ctx.lineWidth = ").append(lineWidth).append(";\n");
-    text.append("ctx.beginPath();\n");
-    text
-      .append("ctx.ellipse(")
-      .append(x)
-      .append(", ")
-      .append(y)
-      .append(", ")
-      .append(r)
-      .append(", ")
-      .append(r)
-      .append(", 0, 0, 2 * Math.PI);\n");
-    text.append("ctx.stroke();\n");
+    strokeStyle(color);
+    lineWidth(lineWidth);
+    beginPath();
+    circle(x, y, r);
+    stroke();
   }
 
   /**
-   * Draws a rectangle starting at x,y with the given width, height, and color.
-   * Positive widths go to the right and negative to the left; positive heights
-   * go down and negative heights go up. The sixth argument, lineWidth, is
-   * optional and defaults to 1.
+   * Draws a rectangle starting at x,y with the given width, height, color, and
+   * lineWidth. Positive widths go to the right and negative to the left;
+   * positive heights go down and negative heights go up.
    */
   public void drawRect(
     double x,
@@ -87,8 +75,8 @@ public class Canvas {
     String color,
     double lineWidth
   ) {
-    text.append("ctx.strokeStyle = '").append(color).append("';\n");
-    text.append("ctx.lineWidth = ").append(lineWidth).append(";\n");
+    strokeStyle(color);
+    lineWidth(lineWidth);
     text
       .append("ctx.strokeRect(")
       .append(x)
@@ -107,7 +95,7 @@ public class Canvas {
    * heights go down and negative heights go up.
    */
   public void drawFilledRect(double x, double y, double width, double height, String color) {
-    text.append("ctx.fillStyle = '").append(color).append("';\n");
+    fillStyle(color);
     text
       .append("ctx.fillRect(")
       .append(x)
@@ -124,18 +112,67 @@ public class Canvas {
    * Draws a filled circle centered at x,y with radius r using the given color.
    */
   public void drawFilledCircle(double x, double y, double r, String color) {
+    fillStyle(color);
+    beginPath();
+    circle(x, y, r);
+    fill();
+  }
+
+  // Primimitives. May replace these with something smarter later so donn't want
+  // to make them public.
+
+  private void strokeStyle(String color) {
+    text.append("ctx.strokeStyle = '").append(color).append("';\n");
+  }
+
+  private void fillStyle(String color) {
     text.append("ctx.fillStyle = '").append(color).append("';\n");
-    text.append("ctx.beginPath();\n");
+  }
+
+  private void lineWidth(double lineWidth) {
+    text.append("ctx.lineWidth = ").append(lineWidth).append(";\n");
+  }
+
+  private void circle(double x, double y, double r) {
+    ellipse(x, y, r, r, 0, 0, 2 * Math.PI);
+  }
+
+  private void ellipse(
+    double x,
+    double y,
+    double radiusX,
+    double radiusY,
+    double rotation,
+    double startAngle,
+    double endAngle
+  ) {
     text
       .append("ctx.ellipse(")
       .append(x)
       .append(", ")
       .append(y)
       .append(", ")
-      .append(r)
+      .append(radiusX)
       .append(", ")
-      .append(r)
-      .append(", 0, 0, 2 * Math.PI);\n");
+      .append(radiusY)
+      .append(", ")
+      .append(rotation)
+      .append(", ")
+      .append(startAngle)
+      .append(", ")
+      .append(endAngle)
+      .append(");\n");
+  }
+
+  private void beginPath() {
+    text.append("ctx.beginPath();\n");
+  }
+
+  private void stroke() {
+    text.append("ctx.stroke();\n");
+  }
+
+  private void fill() {
     text.append("ctx.fill();\n");
   }
 }
