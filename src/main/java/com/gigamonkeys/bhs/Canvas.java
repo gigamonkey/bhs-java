@@ -35,7 +35,7 @@ public class Canvas {
     return height;
   }
 
-  public String getCode() {
+  public String code() {
     text.append(FOOTER);
     return text.toString();
   }
@@ -56,7 +56,22 @@ public class Canvas {
    * Draws a circle centered at x,y with radius r using the given color. The
    * fith argument, lineWidth, is optional and defaults to 1.
    */
-  public void drawCircle(double x, double y, double r, String color, double lineWidth) {}
+  public void drawCircle(double x, double y, double r, String color, double lineWidth) {
+    text.append("ctx.strokeStyle = '").append(color).append("';\n");
+    text.append("ctx.lineWidth = ").append(lineWidth).append(";\n");
+    text.append("ctx.beginPath();\n");
+    text
+      .append("ctx.ellipse(")
+      .append(x)
+      .append(", ")
+      .append(y)
+      .append(", ")
+      .append(r)
+      .append(", ")
+      .append(r)
+      .append(", 0, 0, 2 * Math.PI);\n");
+    text.append("ctx.stroke();\n");
+  }
 
   /**
    * Draws a rectangle starting at x,y with the given width, height, and color.
@@ -71,17 +86,56 @@ public class Canvas {
     double height,
     String color,
     double lineWidth
-  ) {}
+  ) {
+    text.append("ctx.strokeStyle = '").append(color).append("';\n");
+    text.append("ctx.lineWidth = ").append(lineWidth).append(";\n");
+    text
+      .append("ctx.strokeRect(")
+      .append(x)
+      .append(", ")
+      .append(y)
+      .append(", ")
+      .append(width)
+      .append(", ")
+      .append(height)
+      .append(");\n");
+  }
 
   /**
    * Draws a filled rectangle starting at x,y with the given width, height, and
    * color. Positive widths go to the right and negative to the left; positive
    * heights go down and negative heights go up.
    */
-  public void drawFilledRect(double x, double y, double width, double height, String color) {}
+  public void drawFilledRect(double x, double y, double width, double height, String color) {
+    text.append("ctx.fillStyle = '").append(color).append("';\n");
+    text
+      .append("ctx.fillRect(")
+      .append(x)
+      .append(", ")
+      .append(y)
+      .append(", ")
+      .append(width)
+      .append(", ")
+      .append(height)
+      .append(");\n");
+  }
 
   /**
    * Draws a filled circle centered at x,y with radius r using the given color.
    */
-  public void drawFilledCircle(double x, double y, double r, String color) {}
+  public void drawFilledCircle(double x, double y, double r, String color) {
+    text.append("ctx.fillStyle = '").append(color).append("';\n");
+    text.append("ctx.beginPath();\n");
+    text
+      .append("ctx.ellipse(")
+      .append(x)
+      .append(", ")
+      .append(y)
+      .append(", ")
+      .append(r)
+      .append(", ")
+      .append(r)
+      .append(", 0, 0, 2 * Math.PI);\n");
+    text.append("ctx.fill();\n");
+  }
 }

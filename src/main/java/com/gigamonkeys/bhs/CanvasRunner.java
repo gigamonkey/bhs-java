@@ -9,6 +9,6 @@ public class CanvasRunner {
     double height = Double.parseDouble(args[2]);
     var c = new Canvas(width, height);
     ((Picture) clazz.getDeclaredConstructor().newInstance()).draw(c);
-    System.out.println(c.getCode());
+    System.out.println(c.code());
   }
 }
