@@ -1,6 +1,8 @@
 # Is it weird to have a Makefile in a project that is built with Maven?
 # Probably.
 
+.PHONY: all build check publish
+
 # Remove make's default rules.
 .SUFFIXES:
 
