@@ -10,8 +10,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.io.StringWriter;
+import java.io.PrintWriter;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -108,15 +111,59 @@ public class TestRunner {
 
     public TestResult test(TestCase testCase) throws Exception {
       var args = testCase.argsFor(testMethod);
-      var got = testMethod.invoke(testObject, args);
+      Exception exception = null;
+      Object got = null;
+      try {
+        got = testMethod.invoke(testObject, args);
+      } catch (Exception e) {
+        exception = e;
+      }
       var expected = referenceMethod.invoke(referenceObject, args);
       return new TestResult(
         testCase.args(),
-        gson.toJsonTree(got),
+        // FIXME: should probably send the exception and got in separate fields.
+        // Also should probably send got and expected as strings rendered in
+        // Java rather than relying on being able to send back all the data
+        // types we care about as JSON data types. (For instance we run into
+        // problems when Java methods returning double produce Infinity or NaN.)
+        gson.toJsonTree(exception == null ? got : "Exception: " + getStackTraceAsString(exception)),
         gson.toJsonTree(expected),
-        got.equals(expected)
+        theSame(got, expected)
       );
     }
+
+    // Don't be so strict about double values since different correct answers
+    // with slightly diffrent order of operations can produce aswers that are
+    // not exactly the same. This method is not completely general since we can
+    // rely on the fact that got and expected are the same types.
+    public boolean theSame(Object got, Object expected) {
+      if (isFloatingPoint(got) && isFloatingPoint(expected)) {
+        double gotValue = ((Number) got).doubleValue();
+        double expectedValue = ((Number) expected).doubleValue();
+
+        if (gotValue == expectedValue) {
+          // Values are exactly the same.
+          return true;
+        } else {
+          if (gotValue == 0 || expectedValue == 0) {
+            // If either is zero and the other is not that's a fail. (I'm not
+            // sure this is mathematically 100% right but we need to avoid
+            // dividing by 0 in the next step.)
+            return false;
+          } else {
+            // Otherwise, make sure the percent error is small
+            return Math.abs((gotValue - expectedValue) / expectedValue) < 1e-10;
+          }
+        }
+      } else {
+        return Objects.equals(got, expected);
+      }
+    }
+
+    public boolean isFloatingPoint(Object o) {
+      return o instanceof Double || o instanceof Float;
+    }
+
   }
 
   public Map<String, TestResult[]> results() throws Exception {
@@ -156,6 +203,13 @@ public class TestRunner {
 
   public void outputResults() throws Exception {
     System.out.println(resultsAsJson());
+  }
+
+  public static String getStackTraceAsString(Throwable throwable) {
+    StringWriter sw = new StringWriter();
+    PrintWriter pw = new PrintWriter(sw);
+    throwable.printStackTrace(pw);
+    return sw.toString();
   }
 
   public static void main(String[] args) {
