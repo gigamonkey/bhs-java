@@ -1,12 +1,10 @@
 package com.gigamonkeys.bhs;
 
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Base64;
+
 import javax.imageio.ImageIO;
 
 public class ImageRunner {
