@@ -8,7 +8,13 @@
 
 SHELL := bash -O globstar
 
+export CLASSPATH = target/bhs-cs-1.0-SNAPSHOT.jar:$(shell cat cp.txt)
+
 published := /Users/peter/hacks/jobe/jars/bhs-cs.jar
+
+test_runner := com.gigamonkeys.bhs.TestRunner
+
+smoke_test :=  com.gigamonkeys.bhs.TestClass com.gigamonkeys.bhs.ReferenceClass cases.json
 
 all: build check
 
@@ -19,7 +25,7 @@ cp.txt:
 	mvn dependency:build-classpath -Dmdep.outputFile=cp.txt
 
 check: cp.txt
-	java -cp "target/bhs-cs-1.0-SNAPSHOT.jar:$(shell cat cp.txt)" com.gigamonkeys.bhs.TestRunner com.gigamonkeys.bhs.TestClass com.gigamonkeys.bhs.ReferenceClass cases.json
+	java $(test_runner) $(smoke_test)
 
 publish: $(published)
 
