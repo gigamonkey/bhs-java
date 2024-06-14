@@ -12,14 +12,14 @@ import javax.tools.*;
 // Starter code supplied by ChatGPT 4o:
 // https://chatgpt.com/share/17e61a89-9bc0-43d1-8a99-08625048ecb3
 
-public class MethodExtractor {
+public class ThingExtractor {
 
   private static final JavaCompiler COMPILER = ToolProvider.getSystemJavaCompiler();
   private static StandardJavaFileManager FILE_MANAGER =
       COMPILER.getStandardFileManager(null, null, null);
   private final String filename;
 
-  public MethodExtractor(String filename) {
+  public ThingExtractor(String filename) {
     this.filename = filename;
   }
 
@@ -32,7 +32,7 @@ public class MethodExtractor {
   public static void main(String[] args) {
     try {
       for (var filename : args) {
-        MethodExtractor extractor = new MethodExtractor(filename);
+        ThingExtractor extractor = new ThingExtractor(filename);
         for (Thing m : extractor.allMethods()) {
           System.out.println(
               m.what() + "\t" + filename + "\t" + m.name() + "\t" + getSHA1Hash(m.code()));
