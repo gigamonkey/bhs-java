@@ -14,35 +14,41 @@ import java.security.NoSuchAlgorithmException;
 
 public class MethodExtractor {
 
+  private static final JavaCompiler COMPILER = ToolProvider.getSystemJavaCompiler();
+  private static StandardJavaFileManager FILE_MANAGER = COMPILER.getStandardFileManager(null, null, null);
+  private final String filename;
+
+  public MethodExtractor(String filename) {
+    this.filename = filename;
+  }
+
+  public String filename() {
+    return filename;
+  }
+
+  private static record Method(String name, String code) {}
+
   public static void main(String[] args) {
-    if (args.length != 2) {
-      System.out.println("Usage: java MethodExtractorWithJavac <filename> <methodName>");
+    if (args.length != 1) {
+      System.out.println("Usage: java MethodExtractorWithJavac filename");
       return;
     }
 
-    String filename = args[0];
-    String methodName = args[1];
+    MethodExtractor extractor = new MethodExtractor(args[0]);
 
     try {
-      String methodText = extractMethod(filename, methodName);
-      if (methodText != null) {
-        System.out.println(filename + "\t" + methodName + "\t" + getSHA1Hash(methodText));
-      } else {
-        System.out.println(filename + "\t" + methodName + "\t");
+      for (Method m: extractor.allMethods()) {
+        System.out.println(extractor.filename() + "\t" + m.name() + "\t" + getSHA1Hash(m.code()));
       }
     } catch (IOException | NoSuchAlgorithmException e) {
       e.printStackTrace();
     }
   }
 
-  private static String extractMethod(String filename, String methodName) throws IOException {
-    JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-    StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, null);
-    Iterable<? extends JavaFileObject> fileObjects =
-        fileManager.getJavaFileObjectsFromStrings(Arrays.asList(filename));
-
-    JavacTask task = (JavacTask) compiler.getTask(null, fileManager, null, null, null, fileObjects);
-    MethodFinder finder = new MethodFinder(methodName);
+  private List<Method> allMethods() throws IOException {
+    var fileObjects = FILE_MANAGER.getJavaFileObjectsFromStrings(List.of(filename));
+    JavacTask task = (JavacTask) COMPILER.getTask(null, FILE_MANAGER, null, null, null, fileObjects);
+    MethodFinder finder = new MethodFinder();
 
     try {
       Iterable<? extends CompilationUnitTree> parseResults = task.parse();
@@ -53,7 +59,7 @@ public class MethodExtractor {
       e.printStackTrace();
     }
 
-    return finder.getMethodSource();
+    return finder.methods();
   }
 
 
@@ -67,24 +73,35 @@ public class MethodExtractor {
     return sb.toString();
   }
 
-  private static class MethodFinder extends TreePathScanner<Void, Void> {
-    private final String methodName;
-    private String methodSource;
 
-    public MethodFinder(String methodName) {
-      this.methodName = methodName;
+  private String getTypeName(Tree returnType) {
+    if (returnType instanceof IdentifierTree) {
+      return ((IdentifierTree) returnType).getName().toString();
+    } else if (returnType instanceof ParameterizedTypeTree) {
+      return ((ParameterizedTypeTree) returnType).getType().toString();
+    } else if (returnType instanceof PrimitiveTypeTree) {
+      return ((PrimitiveTypeTree) returnType).getPrimitiveTypeKind().toString();
+    } else if (returnType instanceof ArrayTypeTree) {
+      ArrayTypeTree arrayTypeTree = (ArrayTypeTree) returnType;
+      return getTypeName(arrayTypeTree.getType()) + "[]";
     }
+    // Add more cases if needed for other types of trees
+    return returnType.toString();
+  }
+
+
+  private static class MethodFinder extends TreePathScanner<Void, Void> {
+
+    private final List<Method> methods = new ArrayList<>();
 
     @Override
     public Void visitMethod(MethodTree methodTree, Void p) {
-      if (methodTree.getName().toString().equals(methodName)) {
-        methodSource = methodTree.toString();
-      }
+      methods.add(new Method(methodTree.getName().toString(), methodTree.toString()));
       return super.visitMethod(methodTree, p);
     }
 
-    public String getMethodSource() {
-      return methodSource;
+    public List<Method> methods() {
+      return methods;
     }
   }
 }
