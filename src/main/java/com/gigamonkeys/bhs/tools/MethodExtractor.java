@@ -4,18 +4,19 @@ import com.sun.source.tree.*;
 import com.sun.source.util.*;
 import java.io.IOException;
 import java.nio.file.*;
-import java.util.*;
-import javax.tools.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.*;
+import javax.tools.*;
 
-
-// Original code supplied by ChatGPT 4o: https://chatgpt.com/share/17e61a89-9bc0-43d1-8a99-08625048ecb3
+// Starter code supplied by ChatGPT 4o:
+// https://chatgpt.com/share/17e61a89-9bc0-43d1-8a99-08625048ecb3
 
 public class MethodExtractor {
 
   private static final JavaCompiler COMPILER = ToolProvider.getSystemJavaCompiler();
-  private static StandardJavaFileManager FILE_MANAGER = COMPILER.getStandardFileManager(null, null, null);
+  private static StandardJavaFileManager FILE_MANAGER =
+      COMPILER.getStandardFileManager(null, null, null);
   private final String filename;
 
   public MethodExtractor(String filename) {
@@ -30,11 +31,11 @@ public class MethodExtractor {
 
   public static void main(String[] args) {
 
-    for (var filename: args) {
+    for (var filename : args) {
       MethodExtractor extractor = new MethodExtractor(filename);
 
       try {
-        for (Method m: extractor.allMethods()) {
+        for (Method m : extractor.allMethods()) {
           System.out.println(extractor.filename() + "\t" + m.name() + "\t" + getSHA1Hash(m.code()));
         }
       } catch (IOException | NoSuchAlgorithmException e) {
@@ -45,7 +46,8 @@ public class MethodExtractor {
 
   private List<Method> allMethods() throws IOException {
     var fileObjects = FILE_MANAGER.getJavaFileObjectsFromStrings(List.of(filename));
-    JavacTask task = (JavacTask) COMPILER.getTask(null, FILE_MANAGER, null, null, null, fileObjects);
+    JavacTask task =
+        (JavacTask) COMPILER.getTask(null, FILE_MANAGER, null, null, null, fileObjects);
     MethodFinder finder = new MethodFinder();
 
     List<Method> methods = new ArrayList<>();
@@ -57,7 +59,6 @@ public class MethodExtractor {
     return methods;
   }
 
-
   private static String getSHA1Hash(String input) throws NoSuchAlgorithmException {
     MessageDigest md = MessageDigest.getInstance("SHA-1");
     byte[] messageDigest = md.digest(input.getBytes());
@@ -67,7 +68,6 @@ public class MethodExtractor {
     }
     return sb.toString();
   }
-
 
   private String getTypeName(Tree returnType) {
     if (returnType instanceof IdentifierTree) {
@@ -84,7 +84,6 @@ public class MethodExtractor {
     return returnType.toString();
   }
 
-
   private static class MethodFinder extends TreePathScanner<Void, List<Method>> {
 
     @Override
@@ -92,6 +91,5 @@ public class MethodExtractor {
       list.add(new Method(methodTree.getName().toString(), methodTree.toString()));
       return super.visitMethod(methodTree, list);
     }
-
   }
 }
