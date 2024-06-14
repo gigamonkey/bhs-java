@@ -12,5 +12,4 @@ public class TestImageGenerator implements ImageGenerator {
     g.setColor(Color.BLUE);
     g.fillOval(width / 4, height / 4, width / 2, height / 2);
   }
-
 }

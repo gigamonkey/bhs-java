@@ -4,7 +4,6 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Base64;
-
 import javax.imageio.ImageIO;
 
 public class ImageRunner {
@@ -37,5 +36,4 @@ public class ImageRunner {
     var data = Base64.getEncoder().encodeToString(output.toByteArray());
     return "<img src='data:image.png;base64," + data + "'/>";
   }
-
 }

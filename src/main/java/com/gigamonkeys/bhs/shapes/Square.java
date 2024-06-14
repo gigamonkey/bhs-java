@@ -2,9 +2,7 @@ package com.gigamonkeys.bhs.shapes;
 
 import java.awt.*;
 
-/**
- * Simple square shape to be drawn on an image via a java.awt.Graphics object.
- */
+/** Simple square shape to be drawn on an image via a java.awt.Graphics object. */
 public class Square {
 
   private final Graphics2D g;
@@ -15,14 +13,13 @@ public class Square {
   private double rotation = 0;
 
   /**
-   * Constructs a new Square with the specified graphics context, position,
-   * size, and color.
+   * Constructs a new Square with the specified graphics context, position, size, and color.
    *
-   * @param g      the graphics context to be used for drawing.
-   * @param x      the x-coordinate of the top-left corner of the square.
-   * @param y      the y-coordinate of the top-left corner of the square.
-   * @param size   the side length of the square.
-   * @param color  the color of the square.
+   * @param g the graphics context to be used for drawing.
+   * @param x the x-coordinate of the top-left corner of the square.
+   * @param y the y-coordinate of the top-left corner of the square.
+   * @param size the side length of the square.
+   * @param color the color of the square.
    */
   public Square(Graphics g, int x, int y, int size, Color color) {
     this.g = (Graphics2D) g;
@@ -33,13 +30,13 @@ public class Square {
   }
 
   /**
-   * Constructs a new Square with the specified graphics context, position,
-   * size, and a default color of black.
+   * Constructs a new Square with the specified graphics context, position, size, and a default
+   * color of black.
    *
-   * @param g      the graphics context to be used for drawing.
-   * @param x      the x-coordinate of the top-left corner of the square.
-   * @param y      the y-coordinate of the top-left corner of the square.
-   * @param size   the side length of the square.
+   * @param g the graphics context to be used for drawing.
+   * @param x the x-coordinate of the top-left corner of the square.
+   * @param y the y-coordinate of the top-left corner of the square.
+   * @param size the side length of the square.
    */
   public Square(Graphics g, int x, int y, int size) {
     this(g, x, y, size, Color.BLACK);
@@ -131,8 +128,8 @@ public class Square {
   }
 
   /**
-   * Shrinks the size of the square by a percentage of its current size, keeping
-   * its top-left corner in the same position.
+   * Shrinks the size of the square by a percentage of its current size, keeping its top-left corner
+   * in the same position.
    *
    * @param percentage the percentage to shrink, where 0.1 represents 10%.
    */
@@ -141,8 +138,8 @@ public class Square {
   }
 
   /**
-   * Shrinks the size of the square by a percentage of its current size, keeping
-   * its center in the same position.
+   * Shrinks the size of the square by a percentage of its current size, keeping its center in the
+   * same position.
    *
    * @param percentage the percentage to shrink, where 0.1 represents 10%.
    */
@@ -153,8 +150,8 @@ public class Square {
   }
 
   /**
-   * Increases the size of the square by a percentage of its current size,
-   * keeping its top-left corner in the same position.
+   * Increases the size of the square by a percentage of its current size, keeping its top-left
+   * corner in the same position.
    *
    * @param percentage the percentage to increase, where 0.1 represents 10%.
    */
@@ -163,8 +160,8 @@ public class Square {
   }
 
   /**
-   * Increases the size of the square by a percentage of its current size,
-   * keeping its center in the same position.
+   * Increases the size of the square by a percentage of its current size, keeping its center in the
+   * same position.
    *
    * @param percentage the percentage to increase, where 0.1 represents 10%.
    */
@@ -174,16 +171,12 @@ public class Square {
     move(-adj, -adj);
   }
 
-  /**
-   * Draws the outline of the square using its current properties.
-   */
+  /** Draws the outline of the square using its current properties. */
   public void draw() {
     render(false);
   }
 
-  /**
-   * Fills the square using its current properties.
-   */
+  /** Fills the square using its current properties. */
   public void fill() {
     render(true);
   }

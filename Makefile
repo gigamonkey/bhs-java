@@ -8,6 +8,8 @@
 
 SHELL := bash -O globstar
 
+google_java_format := google-java-format-1.22.0-all-deps.jar
+
 export CLASSPATH = target/bhs-cs-1.0-SNAPSHOT.jar:$(shell cat cp.txt)
 
 published := /Users/peter/hacks/jobe/jars/bhs-cs.jar
@@ -20,6 +22,12 @@ all: build check
 
 build:
 	mvn package
+
+fmt: $(google_java_format)
+	java -jar $(google_java_format)  -r src/main/java/**/*.java
+
+$(google_java_format):
+	$(error Download $@ from https://github.com/google/google-java-format/releases)
 
 cp.txt:
 	mvn dependency:build-classpath -Dmdep.outputFile=cp.txt

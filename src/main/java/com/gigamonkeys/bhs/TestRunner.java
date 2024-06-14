@@ -1,5 +1,10 @@
 package com.gigamonkeys.bhs;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.reflect.TypeToken;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
@@ -13,12 +18,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.io.StringWriter;
-import java.io.PrintWriter;
-
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.reflect.TypeToken;
 
 /*
  * A test runner that uses reflection to invoke methods on both a test class and
@@ -29,7 +28,8 @@ import com.google.gson.reflect.TypeToken;
  */
 public class TestRunner {
 
-  // For pretty-printed JSON use new GsonBuilder().setPrettyPrinting().create() instead of new Gson();
+  // For pretty-printed JSON use new GsonBuilder().setPrettyPrinting().create() instead of new
+  // Gson();
   private static final Gson gson = new Gson();
   private static final Type TEST_CASES_TYPE = new TypeToken<Map<String, TestCase[]>>() {}.getType();
 
@@ -41,7 +41,7 @@ public class TestRunner {
   private final Map<String, TestCase[]> allTestCases;
 
   public TestRunner(String testClassName, String referenceClassName, String testCasesFile)
-    throws Exception {
+      throws Exception {
     this.testClass = Class.forName(testClassName);
     this.referenceClass = Class.forName(referenceClassName);
     this.testObject = testClass.getConstructor(new Class[0]).newInstance();
@@ -49,10 +49,9 @@ public class TestRunner {
     this.allTestCases = gson.fromJson(Files.readString(Paths.get(testCasesFile)), TEST_CASES_TYPE);
 
     this.referenceMethods =
-      Arrays
-        .stream(referenceClass.getDeclaredMethods())
-        .filter(method -> Modifier.isPublic(method.getModifiers()))
-        .collect(Collectors.toList());
+        Arrays.stream(referenceClass.getDeclaredMethods())
+            .filter(method -> Modifier.isPublic(method.getModifiers()))
+            .collect(Collectors.toList());
   }
 
   /*
@@ -75,11 +74,7 @@ public class TestRunner {
    * needs to match what the test result display code on the web expects.
    */
   static record TestResult(
-    JsonElement[] args,
-    JsonElement got,
-    JsonElement expected,
-    boolean passed
-  ) {}
+      JsonElement[] args, JsonElement got, JsonElement expected, boolean passed) {}
 
   /*
    * Actually testable combinations of a test method, a reference method, and
@@ -120,16 +115,16 @@ public class TestRunner {
       }
       var expected = referenceMethod.invoke(referenceObject, args);
       return new TestResult(
-        testCase.args(),
-        // FIXME: should probably send the exception and got in separate fields.
-        // Also should probably send got and expected as strings rendered in
-        // Java rather than relying on being able to send back all the data
-        // types we care about as JSON data types. (For instance we run into
-        // problems when Java methods returning double produce Infinity or NaN.)
-        gson.toJsonTree(exception == null ? got : "Exception: " + getStackTraceAsString(exception)),
-        gson.toJsonTree(expected),
-        theSame(got, expected)
-      );
+          testCase.args(),
+          // FIXME: should probably send the exception and got in separate fields.
+          // Also should probably send got and expected as strings rendered in
+          // Java rather than relying on being able to send back all the data
+          // types we care about as JSON data types. (For instance we run into
+          // problems when Java methods returning double produce Infinity or NaN.)
+          gson.toJsonTree(
+              exception == null ? got : "Exception: " + getStackTraceAsString(exception)),
+          gson.toJsonTree(expected),
+          theSame(got, expected));
     }
 
     // Don't be so strict about double values since different correct answers
@@ -163,7 +158,6 @@ public class TestRunner {
     public boolean isFloatingPoint(Object o) {
       return o instanceof Double || o instanceof Float;
     }
-
   }
 
   public Map<String, TestResult[]> results() throws Exception {
@@ -179,12 +173,13 @@ public class TestRunner {
 
     for (Method m : referenceMethods) {
       testMethod(m)
-        .ifPresent(testMethod -> {
-          TestCase[] cases = allTestCases.get(m.getName());
-          if (cases != null) {
-            testables.add(new Testable(testMethod, m, cases));
-          }
-        });
+          .ifPresent(
+              testMethod -> {
+                TestCase[] cases = allTestCases.get(m.getName());
+                if (cases != null) {
+                  testables.add(new Testable(testMethod, m, cases));
+                }
+              });
     }
     return testables;
   }

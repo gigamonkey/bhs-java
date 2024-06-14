@@ -1,5 +1,6 @@
 package com.gigamonkeys.bhs;
 
+import com.google.gson.Gson;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -9,8 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
-import com.google.gson.Gson;
 
 /*
  * A test runner that basically lets a test class exercise an instance of the
@@ -31,10 +30,11 @@ public class BespokeTestRunner {
     public List<Testable> testables();
   }
 
-  // For pretty-printed JSON use new GsonBuilder().setPrettyPrinting().create() instead of new Gson();
+  // For pretty-printed JSON use new GsonBuilder().setPrettyPrinting().create() instead of new
+  // Gson();
   private static final Gson gson = new Gson();
 
-  //private final Class<Tester> testerClass;
+  // private final Class<Tester> testerClass;
   private final Tester tester;
 
   public BespokeTestRunner(Tester tester) {
@@ -47,7 +47,7 @@ public class BespokeTestRunner {
   }
 
   private static Tester loadTester(String name) throws Exception {
-    var testerClass = (Class<Tester>)Class.forName(name);
+    var testerClass = (Class<Tester>) Class.forName(name);
     return testerClass.getConstructor(new Class[0]).newInstance();
   }
 
@@ -56,19 +56,24 @@ public class BespokeTestRunner {
   @SuppressWarnings("unchecked")
   public static <T> T getProxy(Class<T> clazz, Object testObject) {
     // Argh. This is so gross!
-    return (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class<?>[] { clazz }, new InvocationHandler() {
-        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-          // The .get() should be safe here because the only methods we should
-          // try to invoke via the proxy are ones that we identified with
-          // methodToTest in the first place.
-          return methodToTest(method, testObject).get().invoke(testObject, args);
-        }
-      });
+    return (T)
+        Proxy.newProxyInstance(
+            clazz.getClassLoader(),
+            new Class<?>[] {clazz},
+            new InvocationHandler() {
+              public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                // The .get() should be safe here because the only methods we should
+                // try to invoke via the proxy are ones that we identified with
+                // methodToTest in the first place.
+                return methodToTest(method, testObject).get().invoke(testObject, args);
+              }
+            });
   }
 
   private static Optional<Method> methodToTest(Method m, Object testObject) {
     try {
-      return Optional.of(testObject.getClass().getDeclaredMethod(m.getName(), m.getParameterTypes()));
+      return Optional.of(
+          testObject.getClass().getDeclaredMethod(m.getName(), m.getParameterTypes()));
     } catch (NoSuchMethodException | SecurityException e) {
       return Optional.empty();
     }
@@ -89,7 +94,9 @@ public class BespokeTestRunner {
   private Map<String, TestResult[]> results() throws Exception {
     var allResults = new HashMap<String, TestResult[]>();
     for (Testable t : tester.testables()) {
-      allResults.put(t.name(), Arrays.stream(t.results()).collect(Collectors.toList()).toArray(new TestResult[0]));
+      allResults.put(
+          t.name(),
+          Arrays.stream(t.results()).collect(Collectors.toList()).toArray(new TestResult[0]));
     }
     return allResults;
   }

@@ -3,7 +3,7 @@ package com.gigamonkeys.bhs;
 public class Canvas {
 
   private static final String HEADER =
-    """
+      """
       (() => {
         const canvas = document.querySelector('canvas');
         const r = canvas.parentElement.getBoundingClientRect();
@@ -13,7 +13,7 @@ public class Canvas {
         const width = canvas.width;
         const height = canvas.height;
         ctx.clearRect(0, 0, width, height);
-        """;
+      """;
 
   private static final String FOOTER = "})();";
 
@@ -39,9 +39,7 @@ public class Canvas {
     return text.append(FOOTER).toString();
   }
 
-  /**
-   * Draws a line from x1,y1 to x2,y2 using the give color and the given line width.
-   */
+  /** Draws a line from x1,y1 to x2,y2 using the give color and the given line width. */
   public void drawLine(double x1, double y1, double x2, double y2, String color, double lineWidth) {
     strokeStyle(color);
     lineWidth(lineWidth);
@@ -51,9 +49,7 @@ public class Canvas {
     stroke();
   }
 
-  /**
-   * Draws a circle centered at x,y with radius r using the given color and the given lineWidth.
-   */
+  /** Draws a circle centered at x,y with radius r using the given color and the given lineWidth. */
   public void drawCircle(double x, double y, double r, String color, double lineWidth) {
     strokeStyle(color);
     lineWidth(lineWidth);
@@ -63,54 +59,44 @@ public class Canvas {
   }
 
   /**
-   * Draws a rectangle starting at x,y with the given width, height, color, and
-   * lineWidth. Positive widths go to the right and negative to the left;
-   * positive heights go down and negative heights go up.
+   * Draws a rectangle starting at x,y with the given width, height, color, and lineWidth. Positive
+   * widths go to the right and negative to the left; positive heights go down and negative heights
+   * go up.
    */
   public void drawRect(
-    double x,
-    double y,
-    double width,
-    double height,
-    String color,
-    double lineWidth
-  ) {
+      double x, double y, double width, double height, String color, double lineWidth) {
     strokeStyle(color);
     lineWidth(lineWidth);
-    text
-      .append("ctx.strokeRect(")
-      .append(x)
-      .append(", ")
-      .append(y)
-      .append(", ")
-      .append(width)
-      .append(", ")
-      .append(height)
-      .append(");\n");
+    text.append("ctx.strokeRect(")
+        .append(x)
+        .append(", ")
+        .append(y)
+        .append(", ")
+        .append(width)
+        .append(", ")
+        .append(height)
+        .append(");\n");
   }
 
   /**
-   * Draws a filled rectangle starting at x,y with the given width, height, and
-   * color. Positive widths go to the right and negative to the left; positive
-   * heights go down and negative heights go up.
+   * Draws a filled rectangle starting at x,y with the given width, height, and color. Positive
+   * widths go to the right and negative to the left; positive heights go down and negative heights
+   * go up.
    */
   public void drawFilledRect(double x, double y, double width, double height, String color) {
     fillStyle(color);
-    text
-      .append("ctx.fillRect(")
-      .append(x)
-      .append(", ")
-      .append(y)
-      .append(", ")
-      .append(width)
-      .append(", ")
-      .append(height)
-      .append(");\n");
+    text.append("ctx.fillRect(")
+        .append(x)
+        .append(", ")
+        .append(y)
+        .append(", ")
+        .append(width)
+        .append(", ")
+        .append(height)
+        .append(");\n");
   }
 
-  /**
-   * Draws a filled circle centered at x,y with radius r using the given color.
-   */
+  /** Draws a filled circle centered at x,y with radius r using the given color. */
   public void drawFilledCircle(double x, double y, double r, String color) {
     fillStyle(color);
     beginPath();
@@ -138,30 +124,28 @@ public class Canvas {
   }
 
   private void ellipse(
-    double x,
-    double y,
-    double radiusX,
-    double radiusY,
-    double rotation,
-    double startAngle,
-    double endAngle
-  ) {
-    text
-      .append("ctx.ellipse(")
-      .append(x)
-      .append(", ")
-      .append(y)
-      .append(", ")
-      .append(radiusX)
-      .append(", ")
-      .append(radiusY)
-      .append(", ")
-      .append(rotation)
-      .append(", ")
-      .append(startAngle)
-      .append(", ")
-      .append(endAngle)
-      .append(");\n");
+      double x,
+      double y,
+      double radiusX,
+      double radiusY,
+      double rotation,
+      double startAngle,
+      double endAngle) {
+    text.append("ctx.ellipse(")
+        .append(x)
+        .append(", ")
+        .append(y)
+        .append(", ")
+        .append(radiusX)
+        .append(", ")
+        .append(radiusY)
+        .append(", ")
+        .append(rotation)
+        .append(", ")
+        .append(startAngle)
+        .append(", ")
+        .append(endAngle)
+        .append(");\n");
   }
 
   private void beginPath() {

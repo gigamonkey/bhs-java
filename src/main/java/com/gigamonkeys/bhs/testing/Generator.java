@@ -1,28 +1,12 @@
 package com.gigamonkeys.bhs.testing;
 
-import java.util.regex.*;
-import com.gigamonkeys.bhs.BespokeTestRunner;
-import com.gigamonkeys.bhs.Either;
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.lang.reflect.Array;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
-import java.lang.reflect.UndeclaredThrowableException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.function.*;
+import java.util.regex.*;
 import java.util.stream.Collectors;
-import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -31,12 +15,11 @@ public class Generator {
   public static final String ALPHABET = "abcdefghijklmnopqrstuvwxyz";
 
   public static final String[] WORDS = {
-    "COW", "DOG", "CAT", "BAT", "COG", "COT", "BOOT", "PENCIL", "TUNA", "UNITE", "PIG", "ZEBRA", "TUBE"
+    "COW", "DOG", "CAT", "BAT", "COG", "COT", "BOOT", "PENCIL", "TUNA", "UNITE", "PIG", "ZEBRA",
+    "TUBE"
   };
 
-  public static final String[] OTHER_WORDS = {
-    "FISH", "FROG", "TURTLE", "EGG", "MARKER"
-  };
+  public static final String[] OTHER_WORDS = {"FISH", "FROG", "TURTLE", "EGG", "MARKER"};
 
   public String randomWord() {
     if (Math.random() < 0.5) {
@@ -48,8 +31,8 @@ public class Generator {
 
   public ArrayList<String> randomStrings(String letters, int size) {
     return IntStream.range(0, size)
-      .mapToObj(i -> randomString(letters))
-      .collect(Collectors.toCollection(ArrayList<String>::new));
+        .mapToObj(i -> randomString(letters))
+        .collect(Collectors.toCollection(ArrayList<String>::new));
   }
 
   public String randomString(String letters) {
@@ -57,7 +40,9 @@ public class Generator {
   }
 
   public String randomString(String letters, int min, int max) {
-    return IntStream.range(0, min + random(max - min)).mapToObj(i -> randomLetter(letters)).collect(Collectors.joining());
+    return IntStream.range(0, min + random(max - min))
+        .mapToObj(i -> randomLetter(letters))
+        .collect(Collectors.joining());
   }
 
   public String randomLetter(String s) {
@@ -84,14 +69,14 @@ public class Generator {
   }
 
   public int[] randomInts(int size) {
-    return IntStream.range(0, size).map(i -> (int)(Math.random() * 100)).toArray();
+    return IntStream.range(0, size).map(i -> (int) (Math.random() * 100)).toArray();
   }
 
   public ArrayList<Integer> randomList(int size) {
     return IntStream.range(0, size)
-      .map(i -> (int)(Math.random() * 100))
-      .boxed()
-      .collect(Collectors.toCollection(ArrayList<Integer>::new));
+        .map(i -> (int) (Math.random() * 100))
+        .boxed()
+        .collect(Collectors.toCollection(ArrayList<Integer>::new));
   }
 
   public String[][] randomGrid(int rows, int cols) {
@@ -115,11 +100,11 @@ public class Generator {
   }
 
   public <T> T randomElement(T[] ts) {
-    return ts[(int)(Math.random() * ts.length)];
+    return ts[(int) (Math.random() * ts.length)];
   }
 
   public <T> T randomElement(List<T> ts) {
-    return ts.get((int)(Math.random() * ts.size()));
+    return ts.get((int) (Math.random() * ts.size()));
   }
 
   public Object[][] args(Supplier<Object[]> s) {
@@ -127,11 +112,10 @@ public class Generator {
   }
 
   public Object[][] args1(Stream<?> s) {
-    return args(s.map(x -> new Object[] { x }));
+    return args(s.map(x -> new Object[] {x}));
   }
 
   public Object[][] args(Stream<?> s) {
     return s.limit(10).toArray(Object[][]::new);
   }
-
 }
