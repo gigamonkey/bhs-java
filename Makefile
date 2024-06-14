@@ -35,6 +35,9 @@ cp.txt:
 check: cp.txt
 	java $(test_runner) $(smoke_test)
 
+check_refactored:
+	cd tests && $(MAKE) check
+
 publish: $(published)
 
 $(published): target/bhs-cs-1.0-SNAPSHOT.jar
