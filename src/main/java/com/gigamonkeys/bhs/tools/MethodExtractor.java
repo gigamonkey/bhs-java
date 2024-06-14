@@ -27,36 +27,54 @@ public class MethodExtractor {
     return filename;
   }
 
-  private static record Method(String name, String code) {}
+  private static record Thing(String what, String name, String code) {}
 
   public static void main(String[] args) {
-
-    for (var filename : args) {
-      MethodExtractor extractor = new MethodExtractor(filename);
-
-      try {
-        for (Method m : extractor.allMethods()) {
-          System.out.println(extractor.filename() + "\t" + m.name() + "\t" + getSHA1Hash(m.code()));
+    try {
+      for (var filename : args) {
+        MethodExtractor extractor = new MethodExtractor(filename);
+        for (Thing m : extractor.allMethods()) {
+          System.out.println(
+              m.what() + "\t" + filename + "\t" + m.name() + "\t" + getSHA1Hash(m.code()));
         }
-      } catch (IOException | NoSuchAlgorithmException e) {
-        e.printStackTrace();
+        for (Thing m : extractor.allClasses()) {
+          System.out.println(
+              m.what() + "\t" + filename + "\t" + m.name() + "\t" + getSHA1Hash(m.code()));
+        }
       }
+    } catch (IOException | NoSuchAlgorithmException e) {
+      e.printStackTrace();
     }
   }
 
-  private List<Method> allMethods() throws IOException {
+  private List<Thing> allMethods() throws IOException {
     var fileObjects = FILE_MANAGER.getJavaFileObjectsFromStrings(List.of(filename));
     JavacTask task =
         (JavacTask) COMPILER.getTask(null, FILE_MANAGER, null, null, null, fileObjects);
     MethodFinder finder = new MethodFinder();
 
-    List<Method> methods = new ArrayList<>();
+    List<Thing> things = new ArrayList<>();
 
     Iterable<? extends CompilationUnitTree> parseResults = task.parse();
     for (CompilationUnitTree compilationUnitTree : parseResults) {
-      finder.scan(compilationUnitTree, methods);
+      finder.scan(compilationUnitTree, things);
     }
-    return methods;
+    return things;
+  }
+
+  private List<Thing> allClasses() throws IOException {
+    var fileObjects = FILE_MANAGER.getJavaFileObjectsFromStrings(List.of(filename));
+    JavacTask task =
+        (JavacTask) COMPILER.getTask(null, FILE_MANAGER, null, null, null, fileObjects);
+    ClassFinder finder = new ClassFinder();
+
+    List<Thing> things = new ArrayList<>();
+
+    Iterable<? extends CompilationUnitTree> parseResults = task.parse();
+    for (CompilationUnitTree compilationUnitTree : parseResults) {
+      finder.scan(compilationUnitTree, things);
+    }
+    return things;
   }
 
   private static String getSHA1Hash(String input) throws NoSuchAlgorithmException {
@@ -84,12 +102,21 @@ public class MethodExtractor {
     return returnType.toString();
   }
 
-  private static class MethodFinder extends TreePathScanner<Void, List<Method>> {
+  private static class MethodFinder extends TreePathScanner<Void, List<Thing>> {
 
     @Override
-    public Void visitMethod(MethodTree methodTree, List<Method> list) {
-      list.add(new Method(methodTree.getName().toString(), methodTree.toString()));
-      return super.visitMethod(methodTree, list);
+    public Void visitMethod(MethodTree tree, List<Thing> list) {
+      list.add(new Thing("method", tree.getName().toString(), tree.toString()));
+      return super.visitMethod(tree, list);
+    }
+  }
+
+  private static class ClassFinder extends TreePathScanner<Void, List<Thing>> {
+
+    @Override
+    public Void visitClass(ClassTree tree, List<Thing> list) {
+      list.add(new Thing("class", tree.getSimpleName().toString(), tree.toString()));
+      return super.visitClass(tree, list);
     }
   }
 }
