@@ -29,19 +29,17 @@ public class MethodExtractor {
   private static record Method(String name, String code) {}
 
   public static void main(String[] args) {
-    if (args.length != 1) {
-      System.out.println("Usage: java MethodExtractorWithJavac filename");
-      return;
-    }
 
-    MethodExtractor extractor = new MethodExtractor(args[0]);
+    for (var filename: args) {
+      MethodExtractor extractor = new MethodExtractor(filename);
 
-    try {
-      for (Method m: extractor.allMethods()) {
-        System.out.println(extractor.filename() + "\t" + m.name() + "\t" + getSHA1Hash(m.code()));
+      try {
+        for (Method m: extractor.allMethods()) {
+          System.out.println(extractor.filename() + "\t" + m.name() + "\t" + getSHA1Hash(m.code()));
+        }
+      } catch (IOException | NoSuchAlgorithmException e) {
+        e.printStackTrace();
       }
-    } catch (IOException | NoSuchAlgorithmException e) {
-      e.printStackTrace();
     }
   }
 
@@ -50,16 +48,13 @@ public class MethodExtractor {
     JavacTask task = (JavacTask) COMPILER.getTask(null, FILE_MANAGER, null, null, null, fileObjects);
     MethodFinder finder = new MethodFinder();
 
-    try {
-      Iterable<? extends CompilationUnitTree> parseResults = task.parse();
-      for (CompilationUnitTree compilationUnitTree : parseResults) {
-        finder.scan(compilationUnitTree, null);
-      }
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
+    List<Method> methods = new ArrayList<>();
 
-    return finder.methods();
+    Iterable<? extends CompilationUnitTree> parseResults = task.parse();
+    for (CompilationUnitTree compilationUnitTree : parseResults) {
+      finder.scan(compilationUnitTree, methods);
+    }
+    return methods;
   }
 
 
@@ -90,18 +85,13 @@ public class MethodExtractor {
   }
 
 
-  private static class MethodFinder extends TreePathScanner<Void, Void> {
-
-    private final List<Method> methods = new ArrayList<>();
+  private static class MethodFinder extends TreePathScanner<Void, List<Method>> {
 
     @Override
-    public Void visitMethod(MethodTree methodTree, Void p) {
-      methods.add(new Method(methodTree.getName().toString(), methodTree.toString()));
-      return super.visitMethod(methodTree, p);
+    public Void visitMethod(MethodTree methodTree, List<Method> list) {
+      list.add(new Method(methodTree.getName().toString(), methodTree.toString()));
+      return super.visitMethod(methodTree, list);
     }
 
-    public List<Method> methods() {
-      return methods;
-    }
   }
 }
