@@ -50,6 +50,10 @@ public class Generator {
     return s.substring(i, i + 1);
   }
 
+  public String randomLetter() {
+    return randomLetter(ALPHABET);
+  }
+
   public String randomWithXs() {
     List<String> s = new ArrayList<>(Arrays.asList(randomString(ALPHABET).split("")));
     int num = random(10);
@@ -60,11 +64,11 @@ public class Generator {
     return s.stream().collect(Collectors.joining());
   }
 
-  private static int random(int min, int max) {
+  public int random(int min, int max) {
     return min + (int) (Math.random() * (max - min));
   }
 
-  private static int random(int max) {
+  public int random(int max) {
     return random(0, max);
   }
 
