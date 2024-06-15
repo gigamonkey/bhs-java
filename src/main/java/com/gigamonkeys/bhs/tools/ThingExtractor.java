@@ -24,14 +24,28 @@ public class ThingExtractor {
   private static final StandardJavaFileManager FILE_MANAGER =
       COMPILER.getStandardFileManager(null, null, null);
 
-  private static record Thing(String what, String name, String code) {
+  private static record Thing(String filename, String what, String name, String code) {
 
-    public String asTSV(String filename) {
+    public String asTSV() {
       return what + "\t" + filename + "\t" + name + "\t" + getSHA1Hash(code);
     }
 
-    public String asText(String filename) {
+    public String asText() {
       return filename + ": " + what + " (" + getSHA1Hash(code) + ")\n\n" + code;
+    }
+  }
+
+  private static class ThingCollector {
+
+    final String filename;
+    List<Thing> things = new ArrayList<>();
+
+    ThingCollector(String filename) {
+      this.filename = filename;
+    }
+
+    void collect(String what, String name, String code) {
+      things.add(new Thing(filename, what, name, code));
     }
   }
 
@@ -47,7 +61,7 @@ public class ThingExtractor {
 
       ThingExtractor extractor = new ThingExtractor();
       List<String> args = new ArrayList<>(Arrays.asList(argv));
-      BiFunction<Thing, String, String> emitter = Thing::asTSV;
+      Function<Thing, String> emitter = Thing::asTSV;
 
       if (args.getFirst().equals("--text")) {
         emitter = Thing::asText;
@@ -65,10 +79,10 @@ public class ThingExtractor {
     }
   }
 
-  private void emit(List<String> filenames, BiFunction<Thing, String, String> f) {
+  private void emit(List<String> filenames, Function<Thing, String> f) {
     for (var filename : filenames) {
       for (var t : allThings(filename)) {
-        System.out.println(f.apply(t, filename));
+        System.out.println(f.apply(t));
       }
     }
   }
@@ -79,13 +93,13 @@ public class ThingExtractor {
       var task = (JavacTask) COMPILER.getTask(null, FILE_MANAGER, null, null, null, fileObjects);
       var finder = new ThingFinder();
 
-      List<Thing> things = new ArrayList<>();
+      ThingCollector collector = new ThingCollector(filename);
 
       Iterable<? extends CompilationUnitTree> parseResults = task.parse();
       for (CompilationUnitTree compilationUnitTree : parseResults) {
-        finder.scan(compilationUnitTree, things);
+        finder.scan(compilationUnitTree, collector);
       }
-      return things;
+      return collector.things;
     } catch (IOException ioe) {
       throw new Failure("Problem reading/parsing source", ioe);
     }
@@ -120,18 +134,18 @@ public class ThingExtractor {
     return returnType.toString();
   }
 
-  private static class ThingFinder extends TreePathScanner<Void, List<Thing>> {
+  private static class ThingFinder extends TreePathScanner<Void, ThingCollector> {
 
     @Override
-    public Void visitMethod(MethodTree tree, List<Thing> list) {
-      list.add(new Thing("method", tree.getName().toString(), tree.toString()));
-      return super.visitMethod(tree, list);
+    public Void visitMethod(MethodTree tree, ThingCollector things) {
+      things.collect("method", tree.getName().toString(), tree.toString());
+      return super.visitMethod(tree, things);
     }
 
     @Override
-    public Void visitClass(ClassTree tree, List<Thing> list) {
-      list.add(new Thing("class", tree.getSimpleName().toString(), tree.toString()));
-      return super.visitClass(tree, list);
+    public Void visitClass(ClassTree tree, ThingCollector things) {
+      things.collect("class", tree.getSimpleName().toString(), tree.toString());
+      return super.visitClass(tree, things);
     }
   }
 }
