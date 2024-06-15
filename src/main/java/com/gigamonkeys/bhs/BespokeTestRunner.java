@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import com.gigamonkeys.bhs.testing.Testable;
 
 /*
  * A test runner that basically lets a test class exercise an instance of the
@@ -127,18 +128,6 @@ public class BespokeTestRunner {
     } catch (NoSuchMethodException | SecurityException e) {
       return Optional.empty();
     }
-  }
-
-  /*
-   * Anything that is testable. In simple cases may be just the names of
-   * specific methods. But could be properties of the class being tested that
-   * are assessed without invoke methods on the test object.
-   */
-  public static interface Testable {
-
-    public String name();
-
-    public TestResult[] results() throws Exception;
   }
 
   private Map<String, TestResult[]> results() throws Exception {
