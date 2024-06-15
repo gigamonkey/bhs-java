@@ -91,17 +91,12 @@ public class Reflector {
     }
   }
 
-  private Optional<Object> newObject(String recipient, String description, int cost) {
-    Constructor<?> c = getConstructor(String.class, String.class, int.class);
-    return callConstructor(c, recipient, description, cost);
-  }
-
-  private Optional<Object> size(Optional<Object> o) {
+  public Optional<Object> size(Optional<Object> o) {
     Method m = getMethod("size", new Class<?>[0]);
     return o.flatMap(obj -> invokeMethod(m, obj));
   }
 
-  private int getElement(Optional<Object> oo, int i) {
+  public int getElement(Optional<Object> oo, int i) {
     Field f = getField("numbers");
     if (oo.isPresent() && f != null) {
       try {
