@@ -29,7 +29,7 @@ public class BespokeTestRunner {
   public static interface Tester {
     public List<Testable> testables();
 
-    default public String argsToString(Object[] args) {
+    public default String argsToString(Object[] args) {
       var sb = new StringBuilder();
       for (int i = 0; i < args.length; i++) {
         sb.append(anyToString(args[i]));
@@ -40,7 +40,7 @@ public class BespokeTestRunner {
       return sb.toString();
     }
 
-    default public String anyToString(Object o) {
+    public default String anyToString(Object o) {
       if (o == null) {
         return String.valueOf(o);
       } else {
@@ -49,23 +49,23 @@ public class BespokeTestRunner {
           var comp = c.getComponentType();
           if (comp == int.class) {
             return Arrays.toString((int[]) o);
-        } else if (comp == long.class) {
-          return Arrays.toString((long[]) o);
-        } else if (comp == short.class) {
-          return Arrays.toString((short[]) o);
-        } else if (comp == char.class) {
-          return Arrays.toString((char[]) o);
-        } else if (comp == byte.class) {
-          return Arrays.toString((byte[]) o);
-        } else if (comp == boolean.class) {
-          return Arrays.toString((boolean[]) o);
-        } else if (comp == double.class) {
-          return Arrays.toString((double[]) o);
-        } else if (comp == float.class) {
-          return Arrays.toString((float[]) o);
-        } else {
-          Object[] ss = Arrays.stream((Object[]) o).map(this::anyToString).toArray();
-          return Arrays.toString(ss);
+          } else if (comp == long.class) {
+            return Arrays.toString((long[]) o);
+          } else if (comp == short.class) {
+            return Arrays.toString((short[]) o);
+          } else if (comp == char.class) {
+            return Arrays.toString((char[]) o);
+          } else if (comp == byte.class) {
+            return Arrays.toString((byte[]) o);
+          } else if (comp == boolean.class) {
+            return Arrays.toString((boolean[]) o);
+          } else if (comp == double.class) {
+            return Arrays.toString((double[]) o);
+          } else if (comp == float.class) {
+            return Arrays.toString((float[]) o);
+          } else {
+            Object[] ss = Arrays.stream((Object[]) o).map(this::anyToString).toArray();
+            return Arrays.toString(ss);
           }
         } else if (c == String.class) {
           return "\"" + o + "\"";
@@ -75,7 +75,7 @@ public class BespokeTestRunner {
       }
     }
 
-    default public String limited(Object o) {
+    public default String limited(Object o) {
       return anyToString(o).replaceFirst("(?<=^.{70,}) .+? (?=.{10,20}$)", " ... ");
     }
   }
