@@ -7,21 +7,21 @@ import java.nio.file.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.function.*;
 import javax.tools.*;
 
 // Starter code supplied by ChatGPT 4o:
 // https://chatgpt.com/share/17e61a89-9bc0-43d1-8a99-08625048ecb3
 
 /**
- * Tool for extracting bits of source code from .java files. Originally written
- * to find the duplicate code I had created by copying and pasting test classes
- * for assignments during the school year. May also be useful for analyzing
- * student code.
+ * Tool for extracting bits of source code from .java files. Originally written to find the
+ * duplicate code I had created by copying and pasting test classes for assignments during the
+ * school year. May also be useful for analyzing student code.
  */
 public class ThingExtractor {
 
   private static final JavaCompiler COMPILER = ToolProvider.getSystemJavaCompiler();
-  private static StandardJavaFileManager FILE_MANAGER =
+  private static final StandardJavaFileManager FILE_MANAGER =
       COMPILER.getStandardFileManager(null, null, null);
 
   private static record Thing(String what, String name, String code) {
@@ -31,61 +31,64 @@ public class ThingExtractor {
     }
 
     public String asText(String filename) {
-      return filename + ": "  + what + " (" + getSHA1Hash(code) + ")\n\n" + code;
+      return filename + ": " + what + " (" + getSHA1Hash(code) + ")\n\n" + code;
+    }
+  }
+
+  /** Exception thrown to generate a user-visible failure message. */
+  private static class Failure extends RuntimeException {
+    Failure(String msg, Throwable cause) {
+      super(msg, cause);
     }
   }
 
   public static void main(String[] argv) {
-
-    List<String> args = new ArrayList<>(Arrays.asList(argv));
-    ThingExtractor extractor = new ThingExtractor();
-
-    if (args.getFirst().equals("--tsv")) {
-      extractor.emitTSV(args.subList(1, args.size()));
-    } else if (args.getFirst().equals("--text")) {
-      extractor.emitText(args.subList(1, args.size()));
-    } else {
-      extractor.emitTSV(args);
-    }
-  }
-
-  private void emitTSV(List<String> filenames) {
     try {
-      for (var filename : filenames) {
-        for (Thing t : allThings(filename)) {
-          System.out.println(t.asTSV(filename));
-        }
+
+      ThingExtractor extractor = new ThingExtractor();
+      List<String> args = new ArrayList<>(Arrays.asList(argv));
+      BiFunction<Thing, String, String> emitter = Thing::asTSV;
+
+      if (args.getFirst().equals("--text")) {
+        emitter = Thing::asText;
       }
-    } catch (IOException e) {
-      e.printStackTrace();
+
+      if (args.getFirst().startsWith("--")) {
+        args = args.subList(1, args.size());
+      }
+
+      extractor.emit(args, emitter);
+
+    } catch (Failure f) {
+      System.out.println(f.getMessage() + ": " + f.getCause());
+      System.exit(1);
     }
   }
 
-  private void emitText(List<String> filenames) {
+  private void emit(List<String> filenames, BiFunction<Thing, String, String> f) {
+    for (var filename : filenames) {
+      for (var t : allThings(filename)) {
+        System.out.println(f.apply(t, filename));
+      }
+    }
+  }
+
+  private List<Thing> allThings(String filename) {
     try {
-      for (var filename : filenames) {
-        for (Thing t : allThings(filename)) {
-          System.out.println(t.asText(filename));
-        }
+      var fileObjects = FILE_MANAGER.getJavaFileObjectsFromStrings(List.of(filename));
+      var task = (JavacTask) COMPILER.getTask(null, FILE_MANAGER, null, null, null, fileObjects);
+      var finder = new ThingFinder();
+
+      List<Thing> things = new ArrayList<>();
+
+      Iterable<? extends CompilationUnitTree> parseResults = task.parse();
+      for (CompilationUnitTree compilationUnitTree : parseResults) {
+        finder.scan(compilationUnitTree, things);
       }
-    } catch (IOException e) {
-      e.printStackTrace();
+      return things;
+    } catch (IOException ioe) {
+      throw new Failure("Problem reading/parsing source", ioe);
     }
-  }
-
-
-  private List<Thing> allThings(String filename) throws IOException {
-    var fileObjects = FILE_MANAGER.getJavaFileObjectsFromStrings(List.of(filename));
-    var task = (JavacTask) COMPILER.getTask(null, FILE_MANAGER, null, null, null, fileObjects);
-    var finder = new ThingFinder();
-
-    List<Thing> things = new ArrayList<>();
-
-    Iterable<? extends CompilationUnitTree> parseResults = task.parse();
-    for (CompilationUnitTree compilationUnitTree : parseResults) {
-      finder.scan(compilationUnitTree, things);
-    }
-    return things;
   }
 
   private static String getSHA1Hash(String input) {
