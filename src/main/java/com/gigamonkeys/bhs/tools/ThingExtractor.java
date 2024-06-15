@@ -17,37 +17,64 @@ public class ThingExtractor {
   private static final JavaCompiler COMPILER = ToolProvider.getSystemJavaCompiler();
   private static StandardJavaFileManager FILE_MANAGER =
       COMPILER.getStandardFileManager(null, null, null);
-  private final String filename;
 
-  public ThingExtractor(String filename) {
-    this.filename = filename;
+  private static record Thing(String what, String name, String code) {
+
+    public String asTSV(String filename) {
+      return what + "\t" + filename + "\t" + name + "\t" + getSHA1Hash(code);
+    }
+
+    public String asText(String filename) {
+      return filename + ": "  + what + " (" + getSHA1Hash(code) + ")\n\n" + code;
+    }
   }
 
-  public String filename() {
-    return filename;
+  public static void main(String[] argv) {
+
+    List<String> args = new ArrayList<>(Arrays.asList(argv));
+    ThingExtractor extractor = new ThingExtractor();
+
+    if (args.getFirst().equals("--tsv")) {
+      extractor.emitTSV(args.subList(1, args.size()));
+    } else if (args.getFirst().equals("--text")) {
+      extractor.emitText(args.subList(1, args.size()));
+    } else {
+      extractor.emitTSV(args);
+    }
   }
 
-  private static record Thing(String what, String name, String code) {}
-
-  public static void main(String[] args) {
+  private void emitTSV(List<String> filenames) {
     try {
-      for (var filename : args) {
-        ThingExtractor extractor = new ThingExtractor(filename);
-        for (Thing m : extractor.allMethods()) {
-          System.out.println(
-              m.what() + "\t" + filename + "\t" + m.name() + "\t" + getSHA1Hash(m.code()));
+      for (var filename : filenames) {
+        for (Thing t : allMethods(filename)) {
+          System.out.println(t.asTSV(filename));
         }
-        for (Thing m : extractor.allClasses()) {
-          System.out.println(
-              m.what() + "\t" + filename + "\t" + m.name() + "\t" + getSHA1Hash(m.code()));
+        for (Thing t : allClasses(filename)) {
+          System.out.println(t.asTSV(filename));
         }
       }
-    } catch (IOException | NoSuchAlgorithmException e) {
+    } catch (IOException e) {
       e.printStackTrace();
     }
   }
 
-  private List<Thing> allMethods() throws IOException {
+  private void emitText(List<String> filenames) {
+    try {
+      for (var filename : filenames) {
+        for (Thing t : allMethods(filename)) {
+          System.out.println(t.asText(filename));
+        }
+        for (Thing t : allClasses(filename)) {
+          System.out.println(t.asText(filename));
+        }
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+
+  private List<Thing> allMethods(String filename) throws IOException {
     var fileObjects = FILE_MANAGER.getJavaFileObjectsFromStrings(List.of(filename));
     JavacTask task =
         (JavacTask) COMPILER.getTask(null, FILE_MANAGER, null, null, null, fileObjects);
@@ -62,7 +89,7 @@ public class ThingExtractor {
     return things;
   }
 
-  private List<Thing> allClasses() throws IOException {
+  private List<Thing> allClasses(String filename) throws IOException {
     var fileObjects = FILE_MANAGER.getJavaFileObjectsFromStrings(List.of(filename));
     JavacTask task =
         (JavacTask) COMPILER.getTask(null, FILE_MANAGER, null, null, null, fileObjects);
@@ -77,14 +104,18 @@ public class ThingExtractor {
     return things;
   }
 
-  private static String getSHA1Hash(String input) throws NoSuchAlgorithmException {
-    MessageDigest md = MessageDigest.getInstance("SHA-1");
-    byte[] messageDigest = md.digest(input.getBytes());
-    StringBuilder sb = new StringBuilder();
-    for (byte b : messageDigest) {
-      sb.append(String.format("%02x", b));
+  private static String getSHA1Hash(String input) {
+    try {
+      MessageDigest md = MessageDigest.getInstance("SHA-1");
+      byte[] messageDigest = md.digest(input.getBytes());
+      StringBuilder sb = new StringBuilder();
+      for (byte b : messageDigest) {
+        sb.append(String.format("%02x", b));
+      }
+      return sb.toString();
+    } catch (NoSuchAlgorithmException e) {
+      throw new Error(e);
     }
-    return sb.toString();
   }
 
   private String getTypeName(Tree returnType) {
