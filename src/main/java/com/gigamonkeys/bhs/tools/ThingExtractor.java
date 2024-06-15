@@ -12,6 +12,12 @@ import javax.tools.*;
 // Starter code supplied by ChatGPT 4o:
 // https://chatgpt.com/share/17e61a89-9bc0-43d1-8a99-08625048ecb3
 
+/**
+ * Tool for extracting bits of source code from .java files. Originally written
+ * to find the duplicate code I had created by copying and pasting test classes
+ * for assignments during the school year. May also be useful for analyzing
+ * student code.
+ */
 public class ThingExtractor {
 
   private static final JavaCompiler COMPILER = ToolProvider.getSystemJavaCompiler();
@@ -46,10 +52,7 @@ public class ThingExtractor {
   private void emitTSV(List<String> filenames) {
     try {
       for (var filename : filenames) {
-        for (Thing t : allMethods(filename)) {
-          System.out.println(t.asTSV(filename));
-        }
-        for (Thing t : allClasses(filename)) {
+        for (Thing t : allThings(filename)) {
           System.out.println(t.asTSV(filename));
         }
       }
@@ -61,10 +64,7 @@ public class ThingExtractor {
   private void emitText(List<String> filenames) {
     try {
       for (var filename : filenames) {
-        for (Thing t : allMethods(filename)) {
-          System.out.println(t.asText(filename));
-        }
-        for (Thing t : allClasses(filename)) {
+        for (Thing t : allThings(filename)) {
           System.out.println(t.asText(filename));
         }
       }
@@ -74,26 +74,10 @@ public class ThingExtractor {
   }
 
 
-  private List<Thing> allMethods(String filename) throws IOException {
+  private List<Thing> allThings(String filename) throws IOException {
     var fileObjects = FILE_MANAGER.getJavaFileObjectsFromStrings(List.of(filename));
-    JavacTask task =
-        (JavacTask) COMPILER.getTask(null, FILE_MANAGER, null, null, null, fileObjects);
-    MethodFinder finder = new MethodFinder();
-
-    List<Thing> things = new ArrayList<>();
-
-    Iterable<? extends CompilationUnitTree> parseResults = task.parse();
-    for (CompilationUnitTree compilationUnitTree : parseResults) {
-      finder.scan(compilationUnitTree, things);
-    }
-    return things;
-  }
-
-  private List<Thing> allClasses(String filename) throws IOException {
-    var fileObjects = FILE_MANAGER.getJavaFileObjectsFromStrings(List.of(filename));
-    JavacTask task =
-        (JavacTask) COMPILER.getTask(null, FILE_MANAGER, null, null, null, fileObjects);
-    ClassFinder finder = new ClassFinder();
+    var task = (JavacTask) COMPILER.getTask(null, FILE_MANAGER, null, null, null, fileObjects);
+    var finder = new ThingFinder();
 
     List<Thing> things = new ArrayList<>();
 
@@ -133,16 +117,13 @@ public class ThingExtractor {
     return returnType.toString();
   }
 
-  private static class MethodFinder extends TreePathScanner<Void, List<Thing>> {
+  private static class ThingFinder extends TreePathScanner<Void, List<Thing>> {
 
     @Override
     public Void visitMethod(MethodTree tree, List<Thing> list) {
       list.add(new Thing("method", tree.getName().toString(), tree.toString()));
       return super.visitMethod(tree, list);
     }
-  }
-
-  private static class ClassFinder extends TreePathScanner<Void, List<Thing>> {
 
     @Override
     public Void visitClass(ClassTree tree, List<Thing> list) {
