@@ -24,10 +24,10 @@ public class ThingExtractor {
   private static final StandardJavaFileManager FILE_MANAGER =
       COMPILER.getStandardFileManager(null, null, null);
 
-  private static record Thing(String filename, String what, String name, String code) {
+  private static record Thing(String filename, String what, String name, String fullName, String code) {
 
     public String asTSV() {
-      return what + "\t" + filename + "\t" + name + "\t" + getSHA1Hash(code);
+      return String.join("\t", what, filename, name, fullName, getSHA1Hash(code));
     }
 
     public String asText() {
@@ -44,8 +44,8 @@ public class ThingExtractor {
       this.filename = filename;
     }
 
-    void collect(String what, String name, String code) {
-      things.add(new Thing(filename, what, name, code));
+    void collect(String what, String name, String fullName, String code) {
+      things.add(new Thing(filename, what, name, fullName, code));
     }
   }
 
@@ -136,16 +136,27 @@ public class ThingExtractor {
 
   private static class ThingFinder extends TreePathScanner<Void, ThingCollector> {
 
+    List<String> classStack = new ArrayList<>();
+
     @Override
     public Void visitMethod(MethodTree tree, ThingCollector things) {
-      things.collect("method", tree.getName().toString(), tree.toString());
+      String name = tree.getName().toString();
+      String fullName = String.join(".", classStack) + "." + name;
+      things.collect("method", name, fullName, tree.toString());
       return super.visitMethod(tree, things);
     }
 
     @Override
     public Void visitClass(ClassTree tree, ThingCollector things) {
-      things.collect("class", tree.getSimpleName().toString(), tree.toString());
-      return super.visitClass(tree, things);
+      try {
+        String name = tree.getSimpleName().toString();
+        classStack.add(name);
+        String fullName = String.join(".", classStack);
+        things.collect("class", name, fullName, tree.toString());
+        return super.visitClass(tree, things);
+      } finally {
+        classStack.removeLast();
+      }
     }
   }
 }
