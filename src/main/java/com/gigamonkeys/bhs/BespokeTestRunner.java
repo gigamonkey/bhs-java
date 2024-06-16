@@ -1,5 +1,6 @@
 package com.gigamonkeys.bhs;
 
+import com.gigamonkeys.bhs.testing.Testable;
 import com.google.gson.Gson;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -10,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import com.gigamonkeys.bhs.testing.Testable;
 
 /*
  * A test runner that basically lets a test class exercise an instance of the

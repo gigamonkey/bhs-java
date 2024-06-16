@@ -59,6 +59,16 @@ public class Reflector {
     }
   }
 
+  public Method getSuperclassMethod(String name, Class<?>... classes) {
+    try {
+      Method m = clazz.getSuperclass().getDeclaredMethod(name, classes);
+      m.setAccessible(true);
+      return m;
+    } catch (NoSuchMethodException nsfe) {
+      return null;
+    }
+  }
+
   public Method[] actuallyDeclaredMethods() {
     return Arrays.stream(clazz.getDeclaredMethods())
         .filter(m -> !m.isBridge() && !m.isSynthetic())

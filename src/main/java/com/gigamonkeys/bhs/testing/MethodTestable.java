@@ -9,22 +9,28 @@ import java.lang.reflect.UndeclaredThrowableException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.function.Function;
 
-/**
- * Testable that tests a single method against testcases.
- */
+/** Testable that tests a single method against testcases. */
 public class MethodTestable implements Testable {
 
   private final Method method;
   private final Object proxy;
   private final Object referenceObject;
   private final Map<String, Object[][]> tests;
+  private final Map<String, Function<Object[], String>> labelers;
 
-  public MethodTestable(Method method, Object proxy, Object referenceObject, Map<String, Object[][]> tests) {
+  public MethodTestable(
+      Method method,
+      Object proxy,
+      Object referenceObject,
+      Map<String, Object[][]> tests,
+      Map<String, Function<Object[], String>> labelers) {
     this.method = method;
     this.proxy = proxy;
     this.referenceObject = referenceObject;
     this.tests = tests;
+    this.labelers = labelers;
   }
 
   public String name() {
@@ -36,7 +42,7 @@ public class MethodTestable implements Testable {
     var testcases = tests.get(name());
     if (testcases != null) {
       for (Object[] args : testcases) {
-        String label = name() + "(" + argsToString(args) + ")";
+        String label = getLabel(name(), args);
         Object[] gotArgs = (Object[]) deepArrayCopy(args);
         Object[] expectedArgs = (Object[]) deepArrayCopy(args);
         boolean isVoid = method.getReturnType() == void.class;
@@ -70,10 +76,20 @@ public class MethodTestable implements Testable {
     return r.results();
   }
 
+  private String getLabel(String name, Object[] args) {
+    if (labelers.containsKey(name)) {
+      return labelers.get(name).apply(args);
+    } else {
+      return name + "(" + argsToString(args) + ")";
+    }
+  }
+
   private Either<Throwable, Object> invokeMethodWithException(
-    Method m, Object obj, Object... args) {
+      Method m, Object obj, Object... args) {
     try {
       return Either.right(m.invoke(obj, args));
+    } catch (InvocationTargetException ite) {
+      return Either.left(ite.getCause());
     } catch (Exception e) {
       return Either.left(unwrap(e));
     }
