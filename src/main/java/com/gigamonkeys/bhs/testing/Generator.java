@@ -93,6 +93,16 @@ public class Generator {
     return grid;
   }
 
+  public boolean[][] randomBooleanGrid(int rows, int cols) {
+    boolean[][] grid = new boolean[rows][cols];
+    for (int i = 0; i < rows; i++) {
+      for (int j = 0; j < cols; j++) {
+        grid[i][j] = Math.random() < 0.5;
+      }
+    }
+    return grid;
+  }
+
   public boolean[][] fullGrid(int rows, int cols) {
     boolean[][] grid = new boolean[rows][cols];
     for (int i = 0; i < rows; i++) {
@@ -111,6 +121,10 @@ public class Generator {
     return ts.get((int) (Math.random() * ts.size()));
   }
 
+  public int randomElement(int[] ints) {
+    return ints[(int) (Math.random() * ints.length)];
+  }
+
   public Object[][] args(Supplier<Object[]> s) {
     return args(Stream.generate(s));
   }
@@ -121,5 +135,25 @@ public class Generator {
 
   public Object[][] args(Stream<?> s) {
     return s.limit(10).toArray(Object[][]::new);
+  }
+
+  public int[] randomSorted(int size) {
+    int[] nums = new int[size];
+    int start = random(-50, 50);
+    int n = start;
+    for (int i = 0; i < size; i++) {
+      nums[i] = n;
+      n += random(2, 10);
+    }
+    return nums;
+  }
+
+  public int randomNotInNums(int[] nums) {
+    if (nums.length == 0) {
+      return random(100);
+    } else {
+      int idx = random(nums.length + 1);
+      return idx < nums.length ? nums[idx] - 1 : nums[idx - 1] + 1;
+    }
   }
 }
