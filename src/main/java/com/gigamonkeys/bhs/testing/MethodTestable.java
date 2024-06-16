@@ -19,6 +19,30 @@ public class MethodTestable implements Testable {
   private final Object referenceObject;
   private final Map<String, Object[][]> tests;
   private final Map<String, Function<Object[], String>> labelers;
+  private final Map<String, SpecialCheck> specialChecks;
+
+  public abstract static class SpecialCheck {
+
+    private final String label;
+    private final String expected;
+
+    SpecialCheck(String label, String expected) {
+      this.label = label;
+      this.expected = expected;
+    }
+
+    public String label() {
+      return label;
+    }
+
+    public String expected() {
+      return expected;
+    }
+
+    public abstract String got(Object returned, Object[] args);
+
+    public abstract boolean passed(Object returned, Object[] args);
+  }
 
   public MethodTestable(
       Method method,
@@ -26,11 +50,22 @@ public class MethodTestable implements Testable {
       Object referenceObject,
       Map<String, Object[][]> tests,
       Map<String, Function<Object[], String>> labelers) {
+    this(method, proxy, referenceObject, tests, labelers, Map.of());
+  }
+
+  public MethodTestable(
+      Method method,
+      Object proxy,
+      Object referenceObject,
+      Map<String, Object[][]> tests,
+      Map<String, Function<Object[], String>> labelers,
+      Map<String, SpecialCheck> specialChecks) {
     this.method = method;
     this.proxy = proxy;
     this.referenceObject = referenceObject;
     this.tests = tests;
     this.labelers = labelers;
+    this.specialChecks = specialChecks;
   }
 
   public String name() {
@@ -40,6 +75,7 @@ public class MethodTestable implements Testable {
   public BespokeTestRunner.TestResult[] results() throws Exception {
     var r = new Results();
     var testcases = tests.get(name());
+
     if (testcases != null) {
       for (Object[] args : testcases) {
         String label = getLabel(name(), args);
@@ -55,6 +91,16 @@ public class MethodTestable implements Testable {
           Either<Throwable, Object> eitherGot = invokeMethodWithException(method, proxy, gotArgs);
           if (eitherGot.isRight()) {
             got = eitherGot.getRight();
+
+            var specialCheck = specialChecks.get(name());
+            if (specialCheck != null) {
+              r.add(
+                  label + specialCheck.label(),
+                  specialCheck.expected(),
+                  specialCheck.got(got, gotArgs),
+                  specialCheck.passed(got, gotArgs));
+            }
+
           } else {
             got = eitherGot.getLeft();
             exception = true;
