@@ -1,32 +1,27 @@
 package com.gigamonkeys.bhs.testing;
 
+import com.gigamonkeys.bhs.BespokeTestRunner;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.UndeclaredThrowableException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import javax.imageio.ImageIO;
 import javax.tools.DiagnosticCollector;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardJavaFileManager;
 import javax.tools.ToolProvider;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.UndeclaredThrowableException;
-
-import com.gigamonkeys.bhs.BespokeTestRunner;
-
 /**
- * A generic runner that can compile and test a bunch of source files. Probably
- * this should be merged with BespokeTestRunner and used both in the Jobe server
- * and in my bulk grading. Or possibly as the heart of a grading server. It
- * compiles now (2024-06-16) but may or may not work in any useful way. I just
- * tried to generalize from the test specific one I used last year to grade the
- * word-search assignment.
+ * A generic runner that can compile and test a bunch of source files. Probably this should be
+ * merged with BespokeTestRunner and used both in the Jobe server and in my bulk grading. Or
+ * possibly as the heart of a grading server. It compiles now (2024-06-16) but may or may not work
+ * in any useful way. I just tried to generalize from the test specific one I used last year to
+ * grade the word-search assignment.
  */
 public class Runner {
 
@@ -55,18 +50,22 @@ public class Runner {
     JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
     DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
 
-    try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, null)) {
+    try (StandardJavaFileManager fileManager =
+        compiler.getStandardFileManager(diagnostics, null, null)) {
 
-      Iterable<? extends JavaFileObject> compilationUnits = fileManager.getJavaFileObjectsFromPaths(List.of(file));
-      JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnostics, null, null, compilationUnits);
+      Iterable<? extends JavaFileObject> compilationUnits =
+          fileManager.getJavaFileObjectsFromPaths(List.of(file));
+      JavaCompiler.CompilationTask task =
+          compiler.getTask(null, fileManager, diagnostics, null, null, compilationUnits);
 
-      if (task.call()){
+      if (task.call()) {
         return true;
       } else {
         return false;
         // System.out.println("Compilation failed.");
         // for (Diagnostic<? extends JavaFileObject> diagnostic : diagnostics.getDiagnostics()) {
-        //   System.out.format("Error on line %d in %s%n", diagnostic.getLineNumber(), diagnostic.getSource().toUri());
+        //   System.out.format("Error on line %d in %s%n", diagnostic.getLineNumber(),
+        // diagnostic.getSource().toUri());
         // }
       }
     }
@@ -77,12 +76,14 @@ public class Runner {
     private Class<BespokeTestRunner.Tester> testerClass;
     private BespokeTestRunner.Tester tester = null;
 
-    Generator(Path dir, Class<BespokeTestRunner.Tester> testerClass)  {
+    Generator(Path dir, Class<BespokeTestRunner.Tester> testerClass) {
       this.dir = dir;
       this.testerClass = testerClass;
     }
 
-    Path dir() { return dir; }
+    Path dir() {
+      return dir;
+    }
 
     // Do this lazily so we can recompile the Java file first if needed.
     BespokeTestRunner.Tester tester() {
@@ -90,7 +91,7 @@ public class Runner {
         try {
           var classToTest = new PathClassLoader(dir).loadClass(TEST_CLASS_NAME);
           var testObject = classToTest.getDeclaredConstructor().newInstance();
-          tester = testerClass.getConstructor(new Class[] { Object.class }).newInstance(testObject);
+          tester = testerClass.getConstructor(new Class[] {Object.class}).newInstance(testObject);
         } catch (ReflectiveOperationException roe) {
           throw new RuntimeException(roe);
         }
@@ -117,7 +118,7 @@ public class Runner {
         ok = compile(javaFile());
         System.out.println(ok ? "ok." : " failed.");
       } else {
-        //System.out.println(classFile() + " up to date.");
+        // System.out.println(classFile() + " up to date.");
       }
       return ok;
     }
@@ -152,13 +153,12 @@ public class Runner {
     }
   }
 
-
   public static Stream<Path> dirs(String root) throws IOException {
     var matcher = FileSystems.getDefault().getPathMatcher("glob:**/" + TEST_CLASS_NAME + ".java");
     return Files.walk(Path.of("."))
-      .filter(Files::isRegularFile)
-      .filter(matcher::matches)
-      .map(Path::getParent);
+        .filter(Files::isRegularFile)
+        .filter(matcher::matches)
+        .map(Path::getParent);
   }
 
   public static void main(String[] args) throws Exception {
@@ -168,7 +168,7 @@ public class Runner {
 
     var gens = dirs(".").map(path -> new Generator(path, testerClass)).collect(Collectors.toList());
 
-    for (var g: gens) {
+    for (var g : gens) {
       try {
         if (g.maybeCompile()) {
           g.maybeTest();
