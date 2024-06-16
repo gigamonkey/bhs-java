@@ -20,16 +20,16 @@ public interface Testable {
 
   public BespokeTestRunner.TestResult[] results() throws Exception;
 
-  /** With default labelers. */
+  /** With default labelers and special checks */
   public static List<Testable> methodTestables(
       Class<?> testInterface,
       Object testObject,
       Object referenceObject,
       Map<String, Object[][]> tests) {
-    return methodTestables(testInterface, testObject, referenceObject, tests, Map.of());
+    return methodTestables(testInterface, testObject, referenceObject, tests, Map.of(), Map.of());
   }
 
-  /** With specified labelers. */
+  /** With specified labelers and default specialChecks. */
   public static List<Testable> methodTestables(
       Class<?> testInterface,
       Object testObject,
@@ -41,7 +41,24 @@ public interface Testable {
     return Arrays.stream(testInterface.getDeclaredMethods())
         .map(m -> methodToTest(m, testObject))
         .flatMap(Optional::stream)
-        .map(m -> new MethodTestable(m, proxy, referenceObject, tests, labelers))
+        .map(m -> new MethodTestable(m, proxy, referenceObject, tests, labelers, Map.of()))
+        .collect(Collectors.toList());
+  }
+
+  /** With specified labelers and special checks */
+  public static List<Testable> methodTestables(
+      Class<?> testInterface,
+      Object testObject,
+      Object referenceObject,
+      Map<String, Object[][]> tests,
+      Map<String, Function<Object[], String>> labelers,
+      Map<String, SpecialCheck> specialChecks) {
+
+    Object proxy = BespokeTestRunner.getProxy(testInterface, testObject);
+    return Arrays.stream(testInterface.getDeclaredMethods())
+        .map(m -> methodToTest(m, testObject))
+        .flatMap(Optional::stream)
+        .map(m -> new MethodTestable(m, proxy, referenceObject, tests, labelers, specialChecks))
         .collect(Collectors.toList());
   }
 
