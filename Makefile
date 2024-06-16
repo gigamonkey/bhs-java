@@ -9,6 +9,7 @@
 SHELL := bash -O globstar
 
 google_java_format := google-java-format-1.22.0-all-deps.jar
+format_java :=	java -jar $(google_java_format) --skip-javadoc-formatting --replace
 
 export CLASSPATH = target/bhs-cs-1.0-SNAPSHOT.jar:$(shell cat cp.txt)
 
@@ -24,7 +25,7 @@ build:
 	mvn package
 
 fmt: $(google_java_format)
-	java -jar $(google_java_format)  -r src/main/java/**/*.java
+	$(format_java) src/main/java/**/*.java
 
 $(google_java_format):
 	$(error Download $@ from https://github.com/google/google-java-format/releases)
