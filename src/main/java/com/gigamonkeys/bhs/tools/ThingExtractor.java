@@ -24,14 +24,23 @@ public class ThingExtractor {
   private static final StandardJavaFileManager FILE_MANAGER =
       COMPILER.getStandardFileManager(null, null, null);
 
-  private static record Thing(String filename, String what, String name, String fullName, String code) {
+  private static record Thing(
+      String filename, String what, String name, String fullName, String code) {
 
     public String asTSV() {
       return String.join("\t", what, filename, name, fullName, getSHA1Hash(code));
     }
 
     public String asText() {
-      return filename + ": " + what + " (" + getSHA1Hash(code) + ")\n\n" + code;
+      return String.join(
+          "\n",
+          "What: " + what,
+          "Name: " + name,
+          "Full name: " + fullName,
+          "File: " + filename,
+          "Hash: " + getSHA1Hash(code),
+          "\n",
+          code);
     }
   }
 
