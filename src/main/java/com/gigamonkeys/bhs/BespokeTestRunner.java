@@ -24,6 +24,11 @@ import java.util.stream.Collectors;
  * can check for things like methods that have side effects on their arguments
  * and changes to the state of the object whereas TestRunner is really for
  * testing methods that are pure functions.
+ *
+ * This class can be used as a main class getting passed the classname of the
+ * Tester class on the command line which it then instantiates and runs. Or it
+ * can be used programatically and passed an already instantiate Tester
+ * instance.
  */
 public class BespokeTestRunner {
 
