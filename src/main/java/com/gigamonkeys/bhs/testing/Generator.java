@@ -4,8 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.*;
-import java.util.regex.*;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -21,12 +20,67 @@ public class Generator {
 
   public static final String[] OTHER_WORDS = {"FISH", "FROG", "TURTLE", "EGG", "MARKER"};
 
+  public char randomChar() {
+    return ALPHABET.charAt((int) (Math.random() * ALPHABET.length()));
+  }
+
   public String randomWord() {
     if (Math.random() < 0.5) {
       return randomElement(WORDS);
     } else {
       return randomElement(OTHER_WORDS);
     }
+  }
+
+  public int randomCase(int c) {
+    return Math.random() < 0.5 ? Character.toUpperCase(c) : Character.toLowerCase(c);
+  }
+
+  public String randomCase(String s) {
+    return s.codePoints()
+        .map(this::randomCase)
+        .mapToObj(Character::toString)
+        .collect(Collectors.joining());
+  }
+
+  public String maybePlural(String s) {
+    return Math.random() < 0.5 ? s : s + "s";
+  }
+
+  public String string(int min, int max) {
+    char[] chars = new char[between(min, max)];
+    for (int i = 0; i < chars.length; i++) {
+      chars[i] = randomChar();
+    }
+    return new String(chars);
+  }
+
+  public Stream<String> strings(int min, int max) {
+    return Stream.generate(() -> string(min, max));
+  }
+
+  public String palindrome(String s) {
+    return s + new StringBuilder(s).reverse();
+  }
+
+  public int[] palindromeInts(int min, int max) {
+    int[] ns = new int[between(min, max)];
+    for (int i = 0; i < ns.length / 2; i++) {
+      int n = between(0, 100);
+      ns[i] = n;
+      ns[ns.length - 1 - i] = n;
+    }
+    return ns;
+  }
+
+  public Stream<String> maybePalindromes(int min, int max) {
+    return Stream.generate(
+        () -> Math.random() < 0.5 ? string(min, max) : palindrome(string(min, max / 2)));
+  }
+
+  public Stream<int[]> maybeIntsPalindromes(int min, int max) {
+    return Stream.generate(
+        () -> Math.random() < 0.5 ? randomInts(min, max) : palindromeInts(min, max));
   }
 
   public ArrayList<String> randomStrings(String letters, int size) {
@@ -72,8 +126,28 @@ public class Generator {
     return random(0, max);
   }
 
+  public int randomInt(int limit) {
+    return (int) (Math.random() * limit);
+  }
+
+  public int randomSign() {
+    return Math.random() < 0.5 ? 1 : -1;
+  }
+
   public int[] randomInts(int size) {
     return IntStream.range(0, size).map(i -> (int) (Math.random() * 100)).toArray();
+  }
+
+  public int[] randomInts(int minLen, int maxLen) {
+    return randomInts(minLen, maxLen, 0, 100);
+  }
+
+  public int[] randomInts(int minLen, int maxLen, int min, int max) {
+    int[] ns = new int[between(minLen, maxLen)];
+    for (int i = 0; i < ns.length; i++) {
+      ns[i] = between(min, max);
+    }
+    return ns;
   }
 
   public ArrayList<Integer> randomList(int size) {
@@ -155,5 +229,44 @@ public class Generator {
       int idx = random(nums.length + 1);
       return idx < nums.length ? nums[idx] - 1 : nums[idx - 1] + 1;
     }
+  }
+
+  public Stream<int[]> ints(int minLen, int maxLen) {
+    return ints(minLen, maxLen, 0, 100);
+  }
+
+  public Stream<int[]> ints(int minLen, int maxLen, int min, int max) {
+    return Stream.generate(() -> randomInts(minLen, maxLen, min, max));
+  }
+
+  public IntStream intsBetween(int a, int b) {
+    return IntStream.generate(() -> between(a, b));
+  }
+
+  public static int between(int min, int max) {
+    return (int) doubleBetween(min, max);
+  }
+
+  public static double doubleBetween(int min, int max) {
+    return min + (Math.random() * (max - min));
+  }
+
+  public <T> T[] permute(T[] ts) {
+    List<T> copy = new ArrayList<>(Arrays.asList(ts));
+    Collections.shuffle(copy);
+    return copy.toArray(Arrays.copyOf(ts, 0));
+  }
+
+  public <T> Stream<T[]> permutations(T[] ts) {
+    return Stream.generate(() -> permute(ts));
+  }
+
+  public Stream<String> shuffledWords(String[] words) {
+    var list = new ArrayList<>(Arrays.asList(words));
+    return Stream.generate(
+        () -> {
+          Collections.shuffle(list);
+          return String.join(" ", list);
+        });
   }
 }
