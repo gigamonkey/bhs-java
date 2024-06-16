@@ -2,7 +2,8 @@ package com.gigamonkeys.bhs.testing;
 
 /**
  * Special checks used in MethodTestable to check qualities of the return value
- * and the arguments (e.g. for side effects on the args.)
+ * and the arguments. The only one that currently exists is a check that the
+ * returned value not actually be one of the arguments.
  */
 public abstract class SpecialCheck {
 
