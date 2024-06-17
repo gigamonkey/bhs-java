@@ -151,7 +151,8 @@ public class ThingExtractor {
     public Void visitMethod(MethodTree tree, ThingCollector things) {
       String name = tree.getName().toString();
       String fullName = String.join(".", classStack) + "." + name;
-      things.collect("method", name, fullName, tree.toString());
+      List<? extends VariableTree> types = tree.getParameters();
+      things.collect("method", name + "(" + types + ")", fullName, tree.toString());
       return super.visitMethod(tree, things);
     }
 
@@ -168,4 +169,8 @@ public class ThingExtractor {
       }
     }
   }
+
+  // private static class TypeFinder extends TreePathScanner<Void, List<String>> {
+  //   @Override
+  // }
 }
