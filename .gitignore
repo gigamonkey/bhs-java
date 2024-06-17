@@ -3,3 +3,4 @@ dependency-reduced-pom.xml
 google-java-format-1.22.0-all-deps.jar
 target/
 tests/
+src/main/java/com/gigamonkeys/bhs/testing/StaticGenerator.java
