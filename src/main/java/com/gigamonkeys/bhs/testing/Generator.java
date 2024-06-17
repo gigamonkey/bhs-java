@@ -25,6 +25,13 @@ public class Generator {
     return ALPHABET.charAt((int) (Math.random() * ALPHABET.length()));
   }
 
+  public char randomOtherCharacter(int c) {
+    while (true) {
+      char o = ALPHABET.charAt((int) (Math.random() * ALPHABET.length()));
+      if (o != c) return o;
+    }
+  }
+
   public String randomWord() {
     if (Math.random() < 0.5) {
       return randomElement(WORDS);
