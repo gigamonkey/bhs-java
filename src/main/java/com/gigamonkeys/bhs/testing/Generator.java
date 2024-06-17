@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -99,6 +100,13 @@ public class Generator {
         .collect(Collectors.joining());
   }
 
+  public String randomSubstring(String s) {
+    int start = random(s.length());
+    int left = s.length() - start;
+    int end = start + Math.max(1, random(left));
+    return s.substring(start, end);
+  }
+
   public String randomLetter(String s) {
     int i = random(s.length());
     return s.substring(i, i + 1);
@@ -157,11 +165,49 @@ public class Generator {
         .collect(Collectors.toCollection(ArrayList<Integer>::new));
   }
 
+  public ArrayList<Integer> randomList(int min, int max) {
+    return IntStream.range(0, random(min, max))
+        .map(i -> (int) (Math.random() * 100))
+        .boxed()
+        .collect(Collectors.toCollection(ArrayList<Integer>::new));
+  }
+
+  public ArrayList<Integer> randomListOfIntegers(int size, int min, int max) {
+    return Stream.generate(() -> random(min, max))
+        .limit(size)
+        .collect(Collectors.toCollection(ArrayList::new));
+  }
+
+  public Stream<ArrayList<String>> randomStrings(int num, String[] words) {
+    return Stream.generate(() -> randomListOfStrings((int) (Math.random() * 10), words)).limit(num);
+  }
+
+  public String[] randomWords(int size, String[] words) {
+    return IntStream.range(0, size).mapToObj(i -> randomElement(words)).toArray(String[]::new);
+  }
+
+  public ArrayList<String> randomListOfStrings(int num, String[] words) {
+    return Stream.generate(() -> randomElement(words))
+        .map(this::randomCase)
+        .limit(num)
+        .collect(Collectors.toCollection(ArrayList::new));
+  }
+
   public String[][] randomGrid(int rows, int cols) {
     String[][] grid = new String[rows][cols];
     for (int i = 0; i < rows; i++) {
       for (int j = 0; j < cols; j++) {
         grid[i][j] = randomLetter(ALPHABET);
+      }
+    }
+    return grid;
+  }
+
+  public int[][] randomIntGrid(int rows, int cols) {
+    int[][] grid = new int[rows][cols];
+    for (int i = 0; i < rows; i++) {
+      for (int j = 0; j < cols; j++) {
+        grid[i][j] = random(-10, 10);
       }
     }
     return grid;
@@ -199,16 +245,35 @@ public class Generator {
     return ints[(int) (Math.random() * ints.length)];
   }
 
+  public <T> T randomElementNot(T[] ts, T exclude) {
+    while (true) {
+      T t = randomElement(ts);
+      if (!t.equals(exclude)) return t;
+    }
+  }
+
   public Object[][] args(Supplier<Object[]> s) {
     return args(Stream.generate(s));
+  }
+
+  public Object[][] args1(Supplier<Object> s) {
+    return args1(Stream.generate(s));
+  }
+
+  public Object[][] args(Stream<?> s) {
+    return s.limit(10).toArray(Object[][]::new);
   }
 
   public Object[][] args1(Stream<?> s) {
     return args(s.map(x -> new Object[] {x}));
   }
 
-  public Object[][] args(Stream<?> s) {
-    return s.limit(10).toArray(Object[][]::new);
+  public Object[][] args(IntStream s) {
+    return s.mapToObj(n -> new Object[] {n}).limit(10).toArray(Object[][]::new);
+  }
+
+  public Object[][] args(DoubleStream s) {
+    return s.mapToObj(n -> new Object[] {n}).limit(10).toArray(Object[][]::new);
   }
 
   public int[] randomSorted(int size) {
@@ -243,11 +308,11 @@ public class Generator {
     return IntStream.generate(() -> between(a, b));
   }
 
-  public static int between(int min, int max) {
+  public int between(int min, int max) {
     return (int) doubleBetween(min, max);
   }
 
-  public static double doubleBetween(int min, int max) {
+  public double doubleBetween(double min, double max) {
     return min + (Math.random() * (max - min));
   }
 
@@ -268,5 +333,61 @@ public class Generator {
           Collections.shuffle(list);
           return String.join(" ", list);
         });
+  }
+
+  public double[] randomDoubles(int min, int max) {
+    double[] ds = new double[between(min, max)];
+    for (int i = 0; i < ds.length; i++) {
+      ds[i] = doubleBetween(-100.0, 100.0);
+    }
+    return ds;
+  }
+
+  public Stream<double[]> doubles(int min, int max) {
+    return Stream.generate(() -> randomDoubles(min, max));
+  }
+
+  public DoubleStream doublesBetween(int a, int b) {
+    return DoubleStream.generate(() -> doubleBetween(a, b));
+  }
+
+  public DoubleStream percentages() {
+    return DoubleStream.generate(() -> Math.random());
+  }
+
+  public int[] smallDigits(int size) {
+    int[] ds = new int[size];
+    for (int i = 0; i < ds.length; i++) {
+      ds[i] = (int) (Math.random() * 4);
+    }
+    return ds;
+  }
+
+  public int[] digits(int size) {
+    int[] ds = new int[size];
+    for (int i = 0; i < ds.length; i++) {
+      ds[i] = (int) (Math.random() * 10);
+    }
+    return ds;
+  }
+
+  public int[] numbers(int size, int min, int max) {
+    int[] ns = new int[size];
+    for (int i = 0; i < ns.length; i++) {
+      ns[i] = min + (int) (Math.random() * (max - min));
+    }
+    return ns;
+  }
+
+  public Object[][] tk() {
+    return new Object[0][];
+  }
+
+  @SafeVarargs
+  @SuppressWarnings("varargs")
+  public final Supplier<Object[]> gen(Supplier<Object>... suppliers) {
+    return () -> {
+      return Arrays.stream(suppliers).map(Supplier::get).toArray();
+    };
   }
 }
