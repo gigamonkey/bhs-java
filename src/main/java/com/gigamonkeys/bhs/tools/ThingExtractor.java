@@ -10,13 +10,15 @@ import java.util.*;
 import java.util.function.*;
 import javax.tools.*;
 
-// Starter code supplied by ChatGPT 4o:
-// https://chatgpt.com/share/17e61a89-9bc0-43d1-8a99-08625048ecb3
-
 /**
- * Tool for extracting bits of source code from .java files. Originally written to find the
- * duplicate code I had created by copying and pasting test classes for assignments during the
- * school year. May also be useful for analyzing student code.
+ * Tool for extracting bits of source code from .java files. Originally written
+ * to find the duplicate code I had created by copying and pasting test classes
+ * for assignments during the school year. May also be useful for analyzing
+ * student code.
+ *
+ * Adapted from starter code supplied by ChatGPT 4o:
+ * https://chatgpt.com/share/17e61a89-9bc0-43d1-8a99-08625048ecb3
+ *
  */
 public class ThingExtractor {
 
