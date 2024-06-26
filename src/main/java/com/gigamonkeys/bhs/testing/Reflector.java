@@ -136,7 +136,7 @@ public class Reflector<T> {
     }
   }
 
-  public Either<Throwable, Object> invokeMethodWithException(Method m, Object obj, Object... args) {
+  public Either<Throwable, Object> invokeMethodWithException(Method m, T obj, Object... args) {
     try {
       return Either.right(m.invoke(obj, args));
     } catch (InvocationTargetException ite) {

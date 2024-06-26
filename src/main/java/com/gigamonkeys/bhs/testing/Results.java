@@ -1,6 +1,5 @@
 package com.gigamonkeys.bhs.testing;
 
-import com.gigamonkeys.bhs.BespokeTestRunner;
 import com.gigamonkeys.bhs.Either;
 import java.lang.reflect.*;
 import java.util.*;

@@ -1,6 +1,7 @@
 package com.gigamonkeys.bhs.testing;
 
 import com.gigamonkeys.bhs.BespokeTestRunner;
+import com.gigamonkeys.bhs.testing.Tester;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.UndeclaredThrowableException;
@@ -75,10 +76,10 @@ public class Runner {
 
   static class Generator {
     private final Path dir;
-    private Class<BespokeTestRunner.Tester> testerClass;
-    private BespokeTestRunner.Tester tester = null;
+    private Class<Tester> testerClass;
+    private Tester tester = null;
 
-    Generator(Path dir, Class<BespokeTestRunner.Tester> testerClass) {
+    Generator(Path dir, Class<Tester> testerClass) {
       this.dir = dir;
       this.testerClass = testerClass;
     }
@@ -88,7 +89,7 @@ public class Runner {
     }
 
     // Do this lazily so we can recompile the Java file first if needed.
-    BespokeTestRunner.Tester tester() {
+    Tester tester() {
       if (tester == null) {
         try {
           var classToTest = new PathClassLoader(dir).loadClass(TEST_CLASS_NAME);
@@ -165,7 +166,7 @@ public class Runner {
 
   public static void main(String[] args) throws Exception {
 
-    var testerClass = (Class<BespokeTestRunner.Tester>) Class.forName(args[0]);
+    var testerClass = (Class<Tester>) Class.forName(args[0]);
     var tester = testerClass.getConstructor(new Class[0]).newInstance();
 
     var gens = dirs(".").map(path -> new Generator(path, testerClass)).collect(Collectors.toList());

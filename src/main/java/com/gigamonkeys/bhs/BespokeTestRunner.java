@@ -1,6 +1,7 @@
 package com.gigamonkeys.bhs;
 
 import com.gigamonkeys.bhs.testing.Testable;
+import com.gigamonkeys.bhs.testing.Tester;
 import com.gigamonkeys.bhs.testing.TestResult;
 import com.google.gson.Gson;
 import java.lang.reflect.InvocationHandler;
@@ -32,10 +33,6 @@ import java.util.stream.Collectors;
  * instance.
  */
 public class BespokeTestRunner {
-
-  public static interface Tester {
-    public List<Testable> testables();
-  }
 
   // For pretty-printed JSON use new GsonBuilder().setPrettyPrinting().create() instead of new
   // Gson();

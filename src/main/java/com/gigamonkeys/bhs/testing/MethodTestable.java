@@ -2,10 +2,10 @@ package com.gigamonkeys.bhs.testing;
 
 import static com.gigamonkeys.bhs.testing.Utils.*;
 
-import com.gigamonkeys.bhs.BespokeTestRunner;
 import com.gigamonkeys.bhs.Either;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.lang.reflect.UndeclaredThrowableException;
 import java.util.Map;
 import java.util.function.Function;
@@ -28,6 +28,8 @@ public class MethodTestable implements Testable {
       Map<String, Function<Object[], String>> labelers,
       Map<String, SpecialCheck> specialChecks) {
     this.method = method;
+    this.method.setAccessible(true);
+
     this.proxy = proxy;
     this.referenceObject = referenceObject;
     this.tests = tests;

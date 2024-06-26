@@ -1,6 +1,5 @@
 package com.gigamonkeys.bhs.testing;
 
-import com.gigamonkeys.bhs.BespokeTestRunner;
 import java.util.Map;
 import java.util.function.Supplier;
 
