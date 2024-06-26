@@ -12,12 +12,26 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Optional;
 
-public class Reflector {
+// FIXME: should probaly use Either rather than Optional for a lot of these.
 
-  private Class<?> clazz;
+public class Reflector<T> {
 
-  public Reflector(Class<?> clazz) {
+  private Class<T> clazz;
+
+  public static <T> Reflector<T> of(Class<T> clazz) {
+    return new Reflector<>(clazz);
+  }
+
+  public Reflector(Class<T> clazz) {
     this.clazz = clazz;
+  }
+
+  /*
+   * Instantiate class with no-args constructor.
+   */
+  public Optional<T> instantiate() {
+    Constructor<T> c = getConstructor();
+    return callConstructor(c);
   }
 
   public Field getField(String name) {
@@ -30,7 +44,7 @@ public class Reflector {
     }
   }
 
-  public Optional<Object> getFieldValue(String name, Optional<Object> obj) {
+  public Optional<Object> getFieldValue(String name, Optional<T> obj) {
     Field f = getField(name);
     if (f != null) {
       return obj.map(
@@ -46,9 +60,9 @@ public class Reflector {
     }
   }
 
-  public Constructor<?> getConstructor(Class<?>... classes) {
+  public Constructor<T> getConstructor(Class<?>... classes) {
     try {
-      Constructor<?> c = clazz.getDeclaredConstructor(classes);
+      Constructor<T> c = clazz.getDeclaredConstructor(classes);
       c.setAccessible(true);
       return c;
     } catch (NoSuchMethodException nsfe) {
@@ -82,7 +96,7 @@ public class Reflector {
         .toArray(Method[]::new);
   }
 
-  public Optional<Object> callConstructor(Constructor<?> c, Object... args) {
+  public Optional<T> callConstructor(Constructor<T> c, Object... args) {
     try {
       return Optional.of(c.newInstance(args));
     } catch (Exception e) {
@@ -90,7 +104,7 @@ public class Reflector {
     }
   }
 
-  public Optional<Object> invokeMethod(Method m, Object obj, Object... args) {
+  public Optional<Object> invokeMethod(Method m, T obj, Object... args) {
     try {
       return Optional.of(m.invoke(obj, args));
     } catch (Exception e) {
@@ -98,7 +112,7 @@ public class Reflector {
     }
   }
 
-  public String invokeMain(Class<?> clazz) {
+  public String invokeMain(Class<T> clazz) {
     try {
       Method mainMethod = clazz.getMethod("main", String[].class);
 
@@ -132,11 +146,12 @@ public class Reflector {
     }
   }
 
-  public Optional<Object> size(Optional<Object> o) {
+  public Optional<Object> size(Optional<T> o) {
     Method m = getMethod("size", new Class<?>[0]);
     return o.flatMap(obj -> invokeMethod(m, obj));
   }
 
+  // FIXME: feels like the types on this could be better
   public int getElement(Optional<Object> oo, int i) {
     Field f = getField("numbers");
     if (oo.isPresent() && f != null) {
