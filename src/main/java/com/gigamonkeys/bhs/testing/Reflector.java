@@ -1,9 +1,16 @@
 package com.gigamonkeys.bhs.testing;
 
+import java.lang.reflect.Field;
+
 import com.gigamonkeys.bhs.Either;
-import java.lang.reflect.*;
-import java.util.*;
-import java.util.function.*;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Optional;
 
 public class Reflector {
 
@@ -88,6 +95,30 @@ public class Reflector {
       return Optional.of(m.invoke(obj, args));
     } catch (Exception e) {
       return Optional.empty();
+    }
+  }
+
+  public String invokeMain(Class<?> clazz) {
+    try {
+      Method mainMethod = clazz.getMethod("main", String[].class);
+
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      PrintStream newOut = new PrintStream(baos);
+      PrintStream originalOut = System.out;
+      System.setOut(newOut);
+
+      try {
+        mainMethod.invoke(null, (Object) new String[] {});
+        System.out.flush();
+        return baos.toString();
+
+      } catch (Exception e) {
+        return e.toString();
+      } finally {
+        System.setOut(originalOut); // Step 5: Restore System.out
+      }
+    } catch (NoSuchMethodException nsme) {
+      return "<no main method>";
     }
   }
 
