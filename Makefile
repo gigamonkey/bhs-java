@@ -21,7 +21,7 @@ smoke_test :=  com.gigamonkeys.bhs.TestClass com.gigamonkeys.bhs.ReferenceClass 
 
 all: build check
 
-build: src/main/java/com/gigamonkeys/bhs/testing/StaticGenerator.java
+build:
 	mvn package
 
 fmt: $(google_java_format)
@@ -43,6 +43,3 @@ publish: $(published)
 
 $(published): target/bhs-cs-1.0-SNAPSHOT.jar
 	cp $< $@
-
-src/main/java/com/gigamonkeys/bhs/testing/StaticGenerator.java: src/main/java/com/gigamonkeys/bhs/testing/Generator.java make-static-generator.pl
-	./make-static-generator.pl $< > $@
