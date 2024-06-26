@@ -10,15 +10,15 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Anything that is testable. In simple cases may be just the names of specific methods. But could
- * be properties of the class being tested that are assessed without invoke methods on the test
- * object.
+ * Anything that is testable. In simple cases may be just the names of specific
+ * methods. But could be properties of the class being tested that are assessed
+ * without invoke methods on the test object.
  */
 public interface Testable {
 
   public String name();
 
-  public BespokeTestRunner.TestResult[] results() throws Exception;
+  public TestResult[] results() throws Exception;
 
   /** With default labelers and special checks */
   public static List<Testable> methodTestables(

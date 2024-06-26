@@ -10,7 +10,7 @@ public class Results {
 
   private static class Empty {}
 
-  private List<BespokeTestRunner.TestResult> results = new ArrayList<>();
+  private List<TestResult> results = new ArrayList<>();
 
   private Reflector r;
 
@@ -24,13 +24,13 @@ public class Results {
     this.r = new Reflector(clazz);
   }
 
-  public BespokeTestRunner.TestResult[] results() {
-    return results.toArray(new BespokeTestRunner.TestResult[0]);
+  public TestResult[] results() {
+    return results.toArray(new TestResult[0]);
   }
 
   public Results add(String label, String expected, String unexpected, boolean passed) {
     results.add(
-        new BespokeTestRunner.TestResult(label, passed ? expected : unexpected, expected, passed));
+        new TestResult(label, passed ? expected : unexpected, expected, passed));
     return this;
   }
 

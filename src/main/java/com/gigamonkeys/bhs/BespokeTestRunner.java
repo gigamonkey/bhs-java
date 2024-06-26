@@ -1,6 +1,7 @@
 package com.gigamonkeys.bhs;
 
 import com.gigamonkeys.bhs.testing.Testable;
+import com.gigamonkeys.bhs.testing.TestResult;
 import com.google.gson.Gson;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -56,8 +57,6 @@ public class BespokeTestRunner {
     var testerClass = (Class<Tester>) Class.forName(name);
     return testerClass.getConstructor(new Class[0]).newInstance();
   }
-
-  public static record TestResult(String label, String got, String expected, boolean passed) {}
 
   @SuppressWarnings("unchecked")
   public static <T> T getProxy(Class<T> clazz, Object testObject) {

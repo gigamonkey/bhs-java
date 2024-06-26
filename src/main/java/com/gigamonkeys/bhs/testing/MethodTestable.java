@@ -39,7 +39,7 @@ public class MethodTestable implements Testable {
     return method.getName();
   }
 
-  public BespokeTestRunner.TestResult[] results() throws Exception {
+  public TestResult[] results() throws Exception {
     var r = new Results();
     var testcases = tests.get(name());
 
@@ -121,5 +121,4 @@ public class MethodTestable implements Testable {
     }
   }
 
-  // Copied from BespokeTestRunner.Tester for the moment. May end up living here
 }

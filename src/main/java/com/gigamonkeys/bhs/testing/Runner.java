@@ -17,14 +17,16 @@ import javax.tools.StandardJavaFileManager;
 import javax.tools.ToolProvider;
 
 /**
- * A generic runner that can compile and test a bunch of source files. Probably this should be
- * merged with BespokeTestRunner and used both in the Jobe server and in my bulk grading. Or
- * possibly as the heart of a grading server. It compiles now (2024-06-16) but may or may not work
- * in any useful way. I just tried to generalize from the test specific one I used last year to
- * grade the word-search assignment.
+ * A generic runner that can compile and test a bunch of source files. Probably
+ * this should be merged with BespokeTestRunner and used both in the Jobe server
+ * and in my bulk grading. Or possibly as the heart of a grading server. It
+ * compiles now (2024-06-16) but may or may not work in any useful way. I just
+ * tried to generalize from the test specific one I used last year to grade the
+ * word-search assignment.
  */
 public class Runner {
 
+  // FIXME: this needs to be an argument to the runner.
   public static final String TEST_CLASS_NAME = "Solver";
 
   static class PathClassLoader extends ClassLoader {

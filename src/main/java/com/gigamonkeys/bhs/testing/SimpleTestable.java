@@ -8,9 +8,9 @@ import java.util.function.Supplier;
 public class SimpleTestable implements Testable {
 
   private final String name;
-  private final Map<String, Supplier<BespokeTestRunner.TestResult[]>> tests;
+  private final Map<String, Supplier<TestResult[]>> tests;
 
-  public SimpleTestable(String name, Map<String, Supplier<BespokeTestRunner.TestResult[]>> tests) {
+  public SimpleTestable(String name, Map<String, Supplier<TestResult[]>> tests) {
     this.name = name;
     this.tests = tests;
   }
@@ -19,7 +19,7 @@ public class SimpleTestable implements Testable {
     return this.name;
   }
 
-  public BespokeTestRunner.TestResult[] results() throws Exception {
+  public TestResult[] results() throws Exception {
     return tests.get(name).get();
   }
 }
