@@ -83,22 +83,8 @@ public class TestRunner {
   }
 
   public static void main(String[] args) throws Exception {
-
-    // Idea here is that either of the classes we need could be already on our
-    // classpath or not. If they are, we just Class.forName them. If they are
-    // not.
-
-    // --testerClass FooTester
-    // --testerSource <actual Java source code>
-    //
-
-
-    String testerClassName = args[0];
-    String toTestClassName = args[1];
-
-    Class<Tester> testerClass = (Class<Tester>)Class.forName(testerClassName);
-    Class<?> toTestClass = Class.forName(toTestClassName);
-
+    Class<Tester> testerClass = (Class<Tester>)classFromClassname(args[0]);
+    Class<?> toTestClass = classFromClassname(args[1]);
     new TestRunner().runTests(testerClass, toTestClass);
 
   }
