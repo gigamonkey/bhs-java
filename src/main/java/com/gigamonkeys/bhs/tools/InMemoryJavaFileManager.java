@@ -9,38 +9,32 @@ import java.util.HashMap;
 import java.net.URI;
 
 /**
- * File manager that lets us "write" files by saving their contents to a map we
- * are given.
+ * File manager that saves compiled bytecodes in memory and can provide the
+ * source of some classes from memory.
  */
 public class InMemoryJavaFileManager extends ForwardingJavaFileManager<StandardJavaFileManager> {
 
-  private final Map<String, byte[]> classFiles;
-  private final Map<String, String> sourceFiles;
+  private final InMemoryJavaCompiler compiler;
 
-  protected InMemoryJavaFileManager(StandardJavaFileManager fileManager, Map<String, byte[]> classFiles, Map<String, String> sourceFiles) {
+  protected InMemoryJavaFileManager(StandardJavaFileManager fileManager, InMemoryJavaCompiler compiler) {
     super(fileManager);
-    this.classFiles = classFiles;
-    this.sourceFiles = sourceFiles;
-  }
-
-  public void addSourceFile(String className, String source) {
-    sourceFiles.put(className, source);
+    this.compiler = compiler;
   }
 
   @Override
-  public JavaFileObject getJavaFileForOutput(Location location, String className, JavaFileObject.Kind kind, FileObject sibling) throws IOException {
+  public JavaFileObject getJavaFileForOutput(Location location, String classname, JavaFileObject.Kind kind, FileObject sibling) throws IOException {
 
     if (kind != JavaFileObject.Kind.CLASS) {
-      throw new Error("Expectod only CLASS got " + kind + " for " + className);
+      throw new Error("Expected only CLASS got " + kind + " for " + classname);
     }
 
-    return new SimpleJavaFileObject(URI.create("string:///" + className.replace('.', '/') + kind.extension), kind) {
+    return new SimpleJavaFileObject(URI.create("string:///" + classname.replace('.', '/') + kind.extension), kind) {
       @Override
       public OutputStream openOutputStream() {
         return new ByteArrayOutputStream() {
           @Override
           public void close() throws IOException {
-            classFiles.put(className, toByteArray());
+            compiler.saveBytecodes(classname, toByteArray());
             super.close();
           }
         };
@@ -49,33 +43,28 @@ public class InMemoryJavaFileManager extends ForwardingJavaFileManager<StandardJ
   }
 
   @Override
-  public JavaFileObject getJavaFileForInput(Location location, String className, JavaFileObject.Kind kind) throws IOException {
-    //System.err.println("Getting java file for input. location: " + location + "; className: " + className + "; kind: " + kind);
+  public JavaFileObject getJavaFileForInput(Location location, String classname, JavaFileObject.Kind kind) throws IOException {
     if (kind == JavaFileObject.Kind.SOURCE) {
-      if (sourceFiles.containsKey(className)) {
-        //System.err.println("Found source");
-        return new SimpleJavaFileObject(URI.create("string:///" + className.replace('.', '/') + kind.extension), kind) {
+      String source = compiler.getSource(classname);
+      if (source != null) {
+        return new SimpleJavaFileObject(URI.create("string:///" + classname.replace('.', '/') + kind.extension), kind) {
           @Override
           public CharSequence getCharContent(boolean ignoreEncodingErrors) {
-            return sourceFiles.get(className);
+            return source;
           }
         };
-      } else {
-        //System.err.println("Didn't find source");
       }
     } else if (kind == JavaFileObject.Kind.CLASS) {
-      if (classFiles.containsKey(className)) {
-        //System.err.println("Found bytecodes");
-        return new SimpleJavaFileObject(URI.create("string:///" + className.replace('.', '/') + kind.extension), kind) {
+      byte[] bytes = compiler.getBytecodes(classname);
+      if (bytes != null) {
+        return new SimpleJavaFileObject(URI.create("string:///" + classname.replace('.', '/') + kind.extension), kind) {
           @Override
           public InputStream openInputStream() {
-            return new ByteArrayInputStream(classFiles.get(className));
+            return new ByteArrayInputStream(bytes);
           }
         };
-      } else {
-        //System.err.println("Didn't find bytecodes");
       }
     }
-    return super.getJavaFileForInput(location, className, kind);
+    return super.getJavaFileForInput(location, classname, kind);
   }
 }
