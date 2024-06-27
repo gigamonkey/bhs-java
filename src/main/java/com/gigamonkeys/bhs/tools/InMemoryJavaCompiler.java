@@ -12,65 +12,69 @@ import java.util.HashMap;
 
 public class InMemoryJavaCompiler {
 
-  public static Map<String, byte[]> compile(Path file) throws IOException {
+  private Map<String, byte[]> classes = new HashMap<>();
+
+  /**
+   * Compile a single .java file and save the compiled bytecodes in classes.
+   */
+  public boolean compile(Path file) throws IOException {
     JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
     DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
-    Map<String, byte[]> compiledClasses = new HashMap<>();
 
-    try (StandardJavaFileManager fileManager =
-         compiler.getStandardFileManager(diagnostics, null, null)) {
+    try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, null)) {
 
-      Iterable<? extends JavaFileObject> compilationUnits =
-        fileManager.getJavaFileObjectsFromPaths(List.of(file));
-
-      JavaFileManager inMemoryFileManager = new InMemoryJavaFileManager(fileManager, compiledClasses);
-
-      JavaCompiler.CompilationTask task =
-        compiler.getTask(null, inMemoryFileManager, diagnostics, null, null, compilationUnits);
+      Iterable<? extends JavaFileObject> compilationUnits = fileManager.getJavaFileObjectsFromPaths(List.of(file));
+      JavaFileManager files = new InMemoryJavaFileManager(fileManager, classes);
+      JavaCompiler.CompilationTask task = compiler.getTask(null, files, diagnostics, null, null, compilationUnits);
 
       if (task.call()) {
-        return compiledClasses;
+        return true;
       } else {
+        // FIXME: should collect these some better way
         for (Diagnostic<? extends JavaFileObject> diagnostic : diagnostics.getDiagnostics()) {
           System.out.format("Error on line %d in %s%n", diagnostic.getLineNumber(), diagnostic.getSource().toUri());
         }
-        return null;
+        return false;
       }
     }
   }
 
-  private static class InMemoryJavaFileManager extends ForwardingJavaFileManager<StandardJavaFileManager> {
-    private final Map<String, byte[]> compiledClasses;
+  /**
+   * Compile some Java source and save the compiled bytecodes in classes.
+   */
+  // public boolean compile(String source) throws IOException {
+  //   JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+  //   DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
 
-    protected InMemoryJavaFileManager(StandardJavaFileManager fileManager, Map<String, byte[]> compiledClasses) {
-      super(fileManager);
-      this.compiledClasses = compiledClasses;
-    }
+  //   try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, null)) {
 
-    @Override
-    public JavaFileObject getJavaFileForOutput(Location location, String className, JavaFileObject.Kind kind, FileObject sibling) throws IOException {
-      return new SimpleJavaFileObject(java.net.URI.create("string:///" + className.replace('.', '/') + kind.extension), kind) {
-        @Override
-        public ByteArrayOutputStream openOutputStream() {
-          return new ByteArrayOutputStream() {
-            @Override
-            public void close() throws IOException {
-              compiledClasses.put(className, toByteArray());
-              super.close();
-            }
-          };
-        }
-      };
-    }
-  }
+  //     Iterable<? extends JavaFileObject> compilationUnits = fileManager.getJavaFileObjectsFromPaths(List.of(file));
+  //     JavaFileManager files = new InMemoryJavaFileManager(fileManager, classes);
+  //     JavaCompiler.CompilationTask task = compiler.getTask(null, files, diagnostics, null, null, compilationUnits);
+
+  //     if (task.call()) {
+  //       return true
+  //     } else {
+  //       // FIXME: should collect these some better way
+  //       for (Diagnostic<? extends JavaFileObject> diagnostic : diagnostics.getDiagnostics()) {
+  //         System.out.format("Error on line %d in %s%n", diagnostic.getLineNumber(), diagnostic.getSource().toUri());
+  //       }
+  //       return false;
+  //     }
+  //   }
+  // }
+
+  public Map<String, byte[]> classes() { return classes; }
+
 
   public static void main(String[] args) throws IOException {
-    Path path = Path.of("path/to/your/JavaFile.java");
-    Map<String, byte[]> compiledBytes = compile(path);
+    InMemoryJavaCompiler compiler = new InMemoryJavaCompiler();
+    Path path = Path.of(args[0]);
+    if (compiler.compile(path)) {
+      Map<String, byte[]> compiled = compiler.classes();
 
-    if (compiledBytes != null) {
-      System.out.println("Compilation successful, number of classes: " + compiledBytes.size());
-      for (Map.Entry<String, byte[]> entry : compiledBytes.entrySet()) {
+      System.out.println("Compilation successful, number of classes: " + compiled.size());
+      for (Map.Entry<String, byte[]> entry : compiled.entrySet()) {
         System.out.println("Class: " + entry.getKey() + ", byte array length: " + entry.getValue().length);
       }
     } else {
