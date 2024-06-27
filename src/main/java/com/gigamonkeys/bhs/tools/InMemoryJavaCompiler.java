@@ -12,7 +12,17 @@ import java.util.HashMap;
 
 public class InMemoryJavaCompiler {
 
+  private static JavaFileManager.Location dummyLocation = new JavaFileManager.Location() {
+      @Override public String getName() { return "dummy"; }
+
+      @Override public boolean isOutputLocation() { return true; }
+
+      @Override public boolean isModuleOrientedLocation() { return true; }
+    };
+
+
   private Map<String, byte[]> classes = new HashMap<>();
+  private Map<String, String> sources = new HashMap<>();
 
   /**
    * Compile a single .java file and save the compiled bytecodes in classes.
@@ -24,7 +34,7 @@ public class InMemoryJavaCompiler {
     try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, null)) {
 
       Iterable<? extends JavaFileObject> compilationUnits = fileManager.getJavaFileObjectsFromPaths(List.of(file));
-      JavaFileManager files = new InMemoryJavaFileManager(fileManager, classes);
+      JavaFileManager files = new InMemoryJavaFileManager(fileManager, classes, sources);
       JavaCompiler.CompilationTask task = compiler.getTask(null, files, diagnostics, null, null, compilationUnits);
 
       if (task.call()) {
@@ -39,38 +49,39 @@ public class InMemoryJavaCompiler {
     }
   }
 
-  /**
-   * Compile some Java source and save the compiled bytecodes in classes.
-   */
-  // public boolean compile(String source) throws IOException {
-  //   JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-  //   DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
+  public boolean compileInMemorySource(String className) throws IOException {
+    JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+    DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
 
-  //   try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, null)) {
+    try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, null)) {
 
-  //     Iterable<? extends JavaFileObject> compilationUnits = fileManager.getJavaFileObjectsFromPaths(List.of(file));
-  //     JavaFileManager files = new InMemoryJavaFileManager(fileManager, classes);
-  //     JavaCompiler.CompilationTask task = compiler.getTask(null, files, diagnostics, null, null, compilationUnits);
+      JavaFileManager files = new InMemoryJavaFileManager(fileManager, classes, sources);
+      Iterable<? extends JavaFileObject> compilationUnits = List.of(files.getJavaFileForInput(dummyLocation, className, JavaFileObject.Kind.SOURCE));
+      System.err.println("compilationUnits: " + compilationUnits);
+      JavaCompiler.CompilationTask task = compiler.getTask(null, files, diagnostics, null, null, compilationUnits);
 
-  //     if (task.call()) {
-  //       return true
-  //     } else {
-  //       // FIXME: should collect these some better way
-  //       for (Diagnostic<? extends JavaFileObject> diagnostic : diagnostics.getDiagnostics()) {
-  //         System.out.format("Error on line %d in %s%n", diagnostic.getLineNumber(), diagnostic.getSource().toUri());
-  //       }
-  //       return false;
-  //     }
-  //   }
-  // }
+      if (task.call()) {
+        return true;
+      } else {
+        // FIXME: should collect these some better way
+        for (Diagnostic<? extends JavaFileObject> diagnostic : diagnostics.getDiagnostics()) {
+          System.out.format("Error on line %d in %s%n", diagnostic.getLineNumber(), diagnostic.getSource().toUri());
+        }
+        return false;
+      }
+    }
+  }
 
   public Map<String, byte[]> classes() { return classes; }
 
 
   public static void main(String[] args) throws IOException {
     InMemoryJavaCompiler compiler = new InMemoryJavaCompiler();
-    Path path = Path.of(args[0]);
-    if (compiler.compile(path)) {
+
+    compiler.sources.put("Foo", "public class Foo {}");
+
+    //Path path = Path.of(args[0]);
+    if (compiler.compileInMemorySource("Foo")) {
       Map<String, byte[]> compiled = compiler.classes();
 
       System.out.println("Compilation successful, number of classes: " + compiled.size());
